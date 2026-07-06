@@ -1,0 +1,12 @@
+// https://nuxt.com/docs/api/configuration/nuxt-config
+export default defineNuxtConfig({
+  compatibilityDate: '2025-07-15',
+  devtools: { enabled: true },
+  modules: ['@nuxtjs/tailwindcss'],
+  runtimeConfig: {
+    public: {
+      ssoAuthority: process.env.NUXT_PUBLIC_SSO_AUTHORITY ?? 'http://sso.local',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE ?? 'http://localhost:5259',
+    },
+  },
+})
