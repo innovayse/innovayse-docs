@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Innovayse.Docs.API\Innovayse.Docs.API.csproj" />
     <ProjectReference Include="..\..\src\Innovayse.Docs.Application\Innovayse.Docs.Application.csproj" />
     <ProjectReference Include="..\..\src\Innovayse.Docs.Infrastructure\Innovayse.Docs.Infrastructure.csproj" />
   </ItemGroup>

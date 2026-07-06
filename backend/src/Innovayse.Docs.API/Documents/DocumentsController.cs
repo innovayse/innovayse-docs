@@ -1,0 +1,90 @@
+using System.Security.Claims;
+using Innovayse.Docs.API.Documents.Requests;
+using Innovayse.Docs.Application.Documents;
+using Innovayse.Docs.Application.Sharing;
+using Innovayse.Docs.Domain.Documents;
+using Innovayse.Docs.Domain.Sharing;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Innovayse.Docs.API.Documents;
+
+[ApiController]
+[Route("documents")]
+[Authorize]
+public class DocumentsController : ControllerBase
+{
+    private readonly IDocumentRepository _documentRepository;
+    private readonly IPermissionService _permissionService;
+    private Guid? _callerIdOverride;
+
+    public DocumentsController(IDocumentRepository documentRepository, IPermissionService permissionService)
+    {
+        _documentRepository = documentRepository;
+        _permissionService = permissionService;
+    }
+
+    // Test seam: production code reads the caller from the JWT `sub` claim.
+    internal void SetCallerIdForTesting(Guid callerId) => _callerIdOverride = callerId;
+
+    private Guid CallerId => _callerIdOverride ??
+        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new InvalidOperationException("Missing sub claim"));
+
+    [HttpPost]
+    public async Task<ActionResult<Document>> Create(CreateDocumentRequest request)
+    {
+        var document = new Document
+        {
+            Id = Guid.NewGuid(),
+            Title = request.Title,
+            FolderId = request.FolderId,
+            OwnerId = CallerId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        await _documentRepository.CreateAsync(document);
+        return Created($"/documents/{document.Id}", document);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Document>> Get(Guid id)
+    {
+        var document = await _documentRepository.GetByIdAsync(id);
+        if (document is null) return NotFound();
+
+        if (!await _permissionService.AuthorizeAsync(id, CallerId, DocumentRole.Viewer))
+            return Forbid();
+
+        return Ok(document);
+    }
+
+    [HttpPatch("{id}")]
+    public async Task<ActionResult<Document>> Update(Guid id, CreateDocumentRequest request)
+    {
+        var document = await _documentRepository.GetByIdAsync(id);
+        if (document is null) return NotFound();
+
+        if (!await _permissionService.AuthorizeAsync(id, CallerId, DocumentRole.Editor))
+            return Forbid();
+
+        document.Title = request.Title;
+        document.UpdatedAt = DateTimeOffset.UtcNow;
+        await _documentRepository.UpdateAsync(document);
+        return Ok(document);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var document = await _documentRepository.GetByIdAsync(id);
+        if (document is null) return NotFound();
+
+        if (!await _permissionService.AuthorizeAsync(id, CallerId, DocumentRole.Owner))
+            return Forbid();
+
+        await _documentRepository.DeleteAsync(id);
+        return NoContent();
+    }
+}
