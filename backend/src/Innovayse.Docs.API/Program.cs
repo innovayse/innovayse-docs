@@ -14,6 +14,8 @@ builder.Services.AddScoped<Innovayse.Docs.Application.Sharing.IFolderPermissionR
     Innovayse.Docs.Infrastructure.Repositories.FolderPermissionRepository>();
 builder.Services.AddScoped<Innovayse.Docs.Application.Sharing.IPermissionService,
     Innovayse.Docs.Application.Sharing.PermissionService>();
+builder.Services.AddScoped<Innovayse.Docs.Application.Sharing.IShareLinkRepository,
+    Innovayse.Docs.Infrastructure.Repositories.ShareLinkRepository>();
 
 var app = builder.Build();
 
