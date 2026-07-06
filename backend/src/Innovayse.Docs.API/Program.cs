@@ -18,6 +18,8 @@ builder.Services.AddScoped<Innovayse.Docs.Application.Sharing.IShareLinkReposito
     Innovayse.Docs.Infrastructure.Repositories.ShareLinkRepository>();
 builder.Services.AddScoped<Innovayse.Docs.Application.Comments.ICommentRepository,
     Innovayse.Docs.Infrastructure.Repositories.CommentRepository>();
+builder.Services.AddScoped<Innovayse.Docs.Application.Versions.IVersionRepository,
+    Innovayse.Docs.Infrastructure.Repositories.VersionRepository>();
 
 builder.Services.AddControllers();
 builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)

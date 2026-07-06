@@ -1,6 +1,7 @@
 using Innovayse.Docs.Domain.Comments;
 using Innovayse.Docs.Domain.Documents;
 using Innovayse.Docs.Domain.Sharing;
+using Innovayse.Docs.Domain.Versions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Innovayse.Docs.Infrastructure.Persistence;
@@ -15,6 +16,8 @@ public class DocsDbContext : DbContext
     public DbSet<FolderPermission> FolderPermissions => Set<FolderPermission>();
     public DbSet<ShareLink> ShareLinks => Set<ShareLink>();
     public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<DocumentUpdate> DocumentUpdates => Set<DocumentUpdate>();
+    public DbSet<DocumentVersion> DocumentVersions => Set<DocumentVersion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -25,5 +28,7 @@ public class DocsDbContext : DbContext
         modelBuilder.Entity<ShareLink>().HasKey(s => s.Id);
         modelBuilder.Entity<ShareLink>().HasIndex(s => s.Token).IsUnique();
         modelBuilder.Entity<Comment>().HasKey(c => c.Id);
+        modelBuilder.Entity<DocumentUpdate>().HasKey(u => u.Id);
+        modelBuilder.Entity<DocumentVersion>().HasKey(v => v.Id);
     }
 }
