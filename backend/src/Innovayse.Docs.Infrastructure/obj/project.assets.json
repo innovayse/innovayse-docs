@@ -1,0 +1,113 @@
+{
+  "version": 3,
+  "targets": {
+    "net9.0": {
+      "Innovayse.Docs.Application/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "Innovayse.Docs.Domain": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/Innovayse.Docs.Application.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Innovayse.Docs.Application.dll": {}
+        }
+      },
+      "Innovayse.Docs.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "compile": {
+          "bin/placeholder/Innovayse.Docs.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Innovayse.Docs.Domain.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Innovayse.Docs.Application/1.0.0": {
+      "type": "project",
+      "path": "../Innovayse.Docs.Application/Innovayse.Docs.Application.csproj",
+      "msbuildProject": "../Innovayse.Docs.Application/Innovayse.Docs.Application.csproj"
+    },
+    "Innovayse.Docs.Domain/1.0.0": {
+      "type": "project",
+      "path": "../Innovayse.Docs.Domain/Innovayse.Docs.Domain.csproj",
+      "msbuildProject": "../Innovayse.Docs.Domain/Innovayse.Docs.Domain.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net9.0": [
+      "Innovayse.Docs.Application >= 1.0.0"
+    ]
+  },
+  "packageFolders": {
+    "/home/innovayse/.nuget/packages/": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Infrastructure/Innovayse.Docs.Infrastructure.csproj",
+      "projectName": "Innovayse.Docs.Infrastructure",
+      "projectPath": "/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Infrastructure/Innovayse.Docs.Infrastructure.csproj",
+      "packagesPath": "/home/innovayse/.nuget/packages/",
+      "outputPath": "/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Infrastructure/obj/",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "/home/innovayse/.nuget/NuGet/NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net9.0"
+      ],
+      "sources": {
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "projectReferences": {
+            "/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Application/Innovayse.Docs.Application.csproj": {
+              "projectPath": "/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Application/Innovayse.Docs.Application.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "9.0.300"
+    },
+    "frameworks": {
+      "net9.0": {
+        "targetAlias": "net9.0",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "/home/innovayse/.dotnet/sdk/9.0.312/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

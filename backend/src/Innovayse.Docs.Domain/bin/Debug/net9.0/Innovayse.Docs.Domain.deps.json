@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "Innovayse.Docs.Domain/1.0.0": {
+        "runtime": {
+          "Innovayse.Docs.Domain.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Innovayse.Docs.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

@@ -1,0 +1,12 @@
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/bin/Debug/net9.0/Innovayse.Docs.Domain.deps.json
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/bin/Debug/net9.0/Innovayse.Docs.Domain.dll
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/bin/Debug/net9.0/Innovayse.Docs.Domain.pdb
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/obj/Debug/net9.0/Innovayse.Docs.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/obj/Debug/net9.0/Innovayse.Docs.Domain.AssemblyInfoInputs.cache
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/obj/Debug/net9.0/Innovayse.Docs.Domain.AssemblyInfo.cs
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/obj/Debug/net9.0/Innovayse.Docs.Domain.csproj.CoreCompileInputs.cache
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/obj/Debug/net9.0/Innovayse.Docs.Domain.sourcelink.json
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/obj/Debug/net9.0/Innovayse.Docs.Domain.dll
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/obj/Debug/net9.0/refint/Innovayse.Docs.Domain.dll
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/obj/Debug/net9.0/Innovayse.Docs.Domain.pdb
+/home/innovayse/www/innovayse-workflows/.claude/worktrees/innovayse-docs-implementation/innovayse-docs/backend/src/Innovayse.Docs.Domain/obj/Debug/net9.0/ref/Innovayse.Docs.Domain.dll
