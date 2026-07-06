@@ -17,8 +17,25 @@ builder.Services.AddScoped<Innovayse.Docs.Application.Sharing.IPermissionService
 builder.Services.AddScoped<Innovayse.Docs.Application.Sharing.IShareLinkRepository,
     Innovayse.Docs.Infrastructure.Repositories.ShareLinkRepository>();
 
+builder.Services.AddControllers();
+builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = builder.Configuration["Sso:Authority"] ?? "http://sso.local";
+        options.Audience = builder.Configuration["Sso:Audience"] ?? "innovayse-docs";
+        options.RequireHttpsMetadata = builder.Environment.IsProduction();
+    });
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
+app.MapControllers();
+
 app.Run();
+
+public partial class Program { }
