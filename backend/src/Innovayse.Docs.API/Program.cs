@@ -16,6 +16,8 @@ builder.Services.AddScoped<Innovayse.Docs.Application.Sharing.IPermissionService
     Innovayse.Docs.Application.Sharing.PermissionService>();
 builder.Services.AddScoped<Innovayse.Docs.Application.Sharing.IShareLinkRepository,
     Innovayse.Docs.Infrastructure.Repositories.ShareLinkRepository>();
+builder.Services.AddScoped<Innovayse.Docs.Application.Comments.ICommentRepository,
+    Innovayse.Docs.Infrastructure.Repositories.CommentRepository>();
 
 builder.Services.AddControllers();
 builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
