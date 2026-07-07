@@ -8,12 +8,16 @@ const inviteRole = ref('Viewer')
 const linkUrl = ref<string | null>(null)
 const inviting = ref(false)
 const generatingLink = ref(false)
+const inviteError = ref('')
 
 async function sendInvite() {
+  inviteError.value = ''
   inviting.value = true
   try {
     await inviteUser(props.documentId, inviteEmail.value, inviteRole.value)
     inviteEmail.value = ''
+  } catch (err: any) {
+    inviteError.value = err?.data?.message ?? 'Could not send invite.'
   } finally {
     inviting.value = false
   }
@@ -46,11 +50,12 @@ async function generateLink() {
         </div>
 
         <div class="space-y-2">
-          <label class="text-xs font-medium text-[var(--text-subtitle)]">Invite by user ID</label>
+          <label class="text-xs font-medium text-[var(--text-subtitle)]">Invite by email</label>
           <div class="flex gap-2">
             <input
               v-model="inviteEmail"
-              placeholder="User ID to invite"
+              type="email"
+              placeholder="Email to invite"
               class="min-w-0 flex-1 rounded-[var(--radius-input)] border-0 bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-start)]"
               style="border: var(--input-border)"
             />
@@ -71,6 +76,7 @@ async function generateLink() {
           >
             {{ inviting ? 'Inviting…' : 'Invite' }}
           </button>
+          <p v-if="inviteError" class="text-xs text-red-400">{{ inviteError }}</p>
         </div>
 
         <div class="my-5 h-px bg-white/10" />

@@ -25,15 +25,20 @@ export function useDocsApi() {
       authedFetch('/folders', { method: 'POST', body: { name, parentFolderId } }),
     deleteFolder: (folderId: string) =>
       authedFetch(`/folders/${folderId}`, { method: 'DELETE' }),
-    inviteUser: (documentId: string, userId: string, role: string) =>
+    inviteUser: (documentId: string, email: string, role: string) =>
       authedFetch(`/documents/${documentId}/share/invite`, {
         method: 'POST',
-        body: { userId, role },
+        body: { email, role },
       }),
     createShareLink: (documentId: string, role: string) =>
       authedFetch(`/documents/${documentId}/share/link`, {
         method: 'POST',
         body: { role },
+      }),
+    redeemShareLink: (documentId: string, token: string) =>
+      authedFetch(`/documents/${documentId}/share/redeem`, {
+        method: 'POST',
+        body: { token },
       }),
     listComments: (documentId: string) =>
       authedFetch(`/documents/${documentId}/comments`),
