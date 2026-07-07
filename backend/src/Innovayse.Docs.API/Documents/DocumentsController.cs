@@ -79,6 +79,26 @@ public class DocumentsController : ControllerBase
         return Ok(document);
     }
 
+    public class MoveDocumentRequest
+    {
+        public Guid? FolderId { get; set; }
+    }
+
+    [HttpPatch("{id}/folder")]
+    public async Task<ActionResult<Document>> Move(Guid id, MoveDocumentRequest request)
+    {
+        var document = await _documentRepository.GetByIdAsync(id);
+        if (document is null) return NotFound();
+
+        if (!await _permissionService.AuthorizeAsync(id, CallerId, DocumentRole.Editor))
+            return Forbid();
+
+        document.FolderId = request.FolderId;
+        document.UpdatedAt = DateTimeOffset.UtcNow;
+        await _documentRepository.UpdateAsync(document);
+        return Ok(document);
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {

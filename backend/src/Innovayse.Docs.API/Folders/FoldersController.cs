@@ -42,6 +42,10 @@ public class FoldersController : ControllerBase
         return Created($"/folders/{folder.Id}", folder);
     }
 
+    [HttpGet]
+    public async Task<ActionResult<List<Folder>>> List() =>
+        Ok(await _folderRepository.ListForUserAsync(CallerId));
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Folder>> Get(Guid id)
     {

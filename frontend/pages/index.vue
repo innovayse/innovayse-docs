@@ -1,24 +1,35 @@
 <script setup lang="ts">
 const { user, login, logout, loadUser } = useAuth()
-const { listDocuments, createDocument, deleteDocument } = useDocsApi()
+const { listDocuments, createDocument, deleteDocument, moveDocument, listFolders, createFolder } = useDocsApi()
 
 interface DocSummary {
   id: string
   title: string
   updatedAt: string
+  folderId: string | null
+}
+
+interface FolderSummary {
+  id: string
+  name: string
 }
 
 const documents = ref<DocSummary[]>([])
+const folders = ref<FolderSummary[]>([])
 const loadingDocuments = ref(false)
 const creating = ref(false)
+const creatingFolder = ref(false)
 const searchQuery = ref('')
 const deletingId = ref<string | null>(null)
 const openMenuId = ref<string | null>(null)
+const activeFolderId = ref<string | null>(null)
+
+const documentsInFolder = computed(() => documents.value.filter((doc) => doc.folderId === activeFolderId.value))
 
 const filteredDocuments = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return documents.value
-  return documents.value.filter((doc) => doc.title.toLowerCase().includes(query))
+  if (!query) return documentsInFolder.value
+  return documentsInFolder.value.filter((doc) => doc.title.toLowerCase().includes(query))
 })
 
 async function refreshDocuments() {
@@ -30,13 +41,30 @@ async function refreshDocuments() {
   }
 }
 
+async function refreshFolders() {
+  folders.value = (await listFolders()) as FolderSummary[]
+}
+
 async function createBlankDocument() {
   creating.value = true
   try {
     const doc = (await createDocument('Untitled document')) as DocSummary
+    if (activeFolderId.value) await moveDocument(doc.id, activeFolderId.value)
     await navigateTo(`/documents/${doc.id}`)
   } finally {
     creating.value = false
+  }
+}
+
+async function addFolder() {
+  const name = prompt('Folder name')?.trim()
+  if (!name) return
+  creatingFolder.value = true
+  try {
+    const folder = (await createFolder(name)) as FolderSummary
+    folders.value.push(folder)
+  } finally {
+    creatingFolder.value = false
   }
 }
 
@@ -54,13 +82,23 @@ async function removeDocument(doc: DocSummary) {
   }
 }
 
+async function moveToFolder(doc: DocSummary, folderId: string | null) {
+  openMenuId.value = null
+  try {
+    await moveDocument(doc.id, folderId)
+    doc.folderId = folderId
+  } catch {
+    alert('Could not move this document.')
+  }
+}
+
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 onMounted(async () => {
   await loadUser()
-  if (user.value) await refreshDocuments()
+  if (user.value) await Promise.all([refreshDocuments(), refreshFolders()])
 })
 </script>
 
@@ -107,11 +145,44 @@ onMounted(async () => {
           </span>
         </button>
 
-        <h2 class="mb-4 mt-10 text-sm font-semibold text-[var(--text-subtitle)]">Recent documents</h2>
+        <h2 class="mb-4 mt-10 text-sm font-semibold text-[var(--text-subtitle)]">Folders</h2>
+        <div class="mb-8 flex flex-wrap items-center gap-2">
+          <button
+            class="rounded-full px-3 py-1.5 text-xs font-medium transition"
+            :class="activeFolderId === null
+              ? 'accent-gradient text-white'
+              : 'border border-white/10 text-[var(--text-subtitle)] hover:bg-white/5'"
+            @click="activeFolderId = null"
+          >
+            All documents
+          </button>
+          <button
+            v-for="folder in folders"
+            :key="folder.id"
+            class="rounded-full px-3 py-1.5 text-xs font-medium transition"
+            :class="activeFolderId === folder.id
+              ? 'accent-gradient text-white'
+              : 'border border-white/10 text-[var(--text-subtitle)] hover:bg-white/5'"
+            @click="activeFolderId = folder.id"
+          >
+            📁 {{ folder.name }}
+          </button>
+          <button
+            class="rounded-full border border-dashed border-white/15 px-3 py-1.5 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 disabled:opacity-50"
+            :disabled="creatingFolder"
+            @click="addFolder"
+          >
+            + New folder
+          </button>
+        </div>
+
+        <h2 class="mb-4 text-sm font-semibold text-[var(--text-subtitle)]">
+          {{ activeFolderId ? folders.find((f) => f.id === activeFolderId)?.name : 'Recent documents' }}
+        </h2>
 
         <p v-if="loadingDocuments" class="text-sm text-[var(--text-muted)]">Loading…</p>
-        <p v-else-if="!documents.length" class="text-sm text-[var(--text-muted)]">
-          No documents yet — create one above to get started.
+        <p v-else-if="!documentsInFolder.length" class="text-sm text-[var(--text-muted)]">
+          No documents here yet — create one above to get started.
         </p>
         <p v-else-if="!filteredDocuments.length" class="text-sm text-[var(--text-muted)]">
           No documents match "{{ searchQuery }}".
@@ -142,9 +213,28 @@ onMounted(async () => {
             </button>
             <div
               v-if="openMenuId === doc.id"
-              class="glass-panel absolute right-1.5 top-8 z-10 min-w-[8rem] rounded-[var(--radius-input)] p-1"
+              class="glass-panel absolute right-1.5 top-8 z-10 min-w-[10rem] rounded-[var(--radius-input)] p-1"
               @click.stop
             >
+              <p class="px-2 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                Move to
+              </p>
+              <button
+                v-if="doc.folderId !== null"
+                class="w-full rounded-md px-2 py-1.5 text-left text-xs text-[var(--text-body)] hover:bg-white/5"
+                @click.prevent="moveToFolder(doc, null)"
+              >
+                No folder
+              </button>
+              <button
+                v-for="folder in folders.filter((f) => f.id !== doc.folderId)"
+                :key="folder.id"
+                class="w-full rounded-md px-2 py-1.5 text-left text-xs text-[var(--text-body)] hover:bg-white/5"
+                @click.prevent="moveToFolder(doc, folder.id)"
+              >
+                📁 {{ folder.name }}
+              </button>
+              <div class="my-1 h-px bg-white/10" />
               <button
                 class="w-full rounded-md px-2 py-1.5 text-left text-xs text-red-400 hover:bg-red-500/10"
                 @click.prevent="removeDocument(doc)"

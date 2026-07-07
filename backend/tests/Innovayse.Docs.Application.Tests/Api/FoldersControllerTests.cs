@@ -24,4 +24,20 @@ public class FoldersControllerTests
         Assert.Equal("My Folder", folder.Name);
         Assert.Equal(callerId, folder.OwnerId);
     }
+
+    [Fact]
+    public async Task List_ReturnsFoldersForCaller()
+    {
+        var callerId = Guid.NewGuid();
+        var folders = new List<Folder> { new() { Id = Guid.NewGuid(), Name = "Mine", OwnerId = callerId } };
+        var folderRepo = new Mock<IFolderRepository>();
+        folderRepo.Setup(r => r.ListForUserAsync(callerId)).ReturnsAsync(folders);
+        var controller = new FoldersController(folderRepo.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.List();
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Same(folders, ok.Value);
+    }
 }

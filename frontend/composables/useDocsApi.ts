@@ -18,6 +18,11 @@ export function useDocsApi() {
       authedFetch(`/documents/${documentId}`, { method: 'PATCH', body: { title } }),
     deleteDocument: (documentId: string) =>
       authedFetch(`/documents/${documentId}`, { method: 'DELETE' }),
+    moveDocument: (documentId: string, folderId: string | null) =>
+      authedFetch(`/documents/${documentId}/folder`, { method: 'PATCH', body: { folderId } }),
+    listFolders: () => authedFetch('/folders'),
+    createFolder: (name: string) =>
+      authedFetch('/folders', { method: 'POST', body: { name } }),
     inviteUser: (documentId: string, userId: string, role: string) =>
       authedFetch(`/documents/${documentId}/share/invite`, {
         method: 'POST',
