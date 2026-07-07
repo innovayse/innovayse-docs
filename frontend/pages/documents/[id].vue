@@ -11,6 +11,7 @@ const shareOpen = ref(false)
 const versionHistoryOpen = ref(false)
 const title = ref('')
 const savingTitle = ref(false)
+const documentReady = ref(false)
 const editorRef = ref<{
   getSnapshotBase64: () => string
   restoreFromSnapshotBase64: (b64: string) => void
@@ -29,6 +30,13 @@ onMounted(async () => {
     }
     await router.replace({ query: {} })
   }
+
+  // Only mount the editor/comments children once any share-link redemption has been
+  // attempted — otherwise CommentsSidebar's own onMounted (which fires before this
+  // parent onMounted, per Vue's child-before-parent mount order) can fetch comments
+  // before the redeemed permission actually exists, causing a transient 403 on a
+  // visitor's very first click-through from a share link.
+  documentReady.value = true
 
   const doc = (await getDocument(documentId)) as { title: string }
   title.value = doc.title
@@ -98,7 +106,7 @@ async function handleRestoreVersion(versionId: string) {
     </header>
 
     <div class="mx-auto flex w-full max-w-6xl flex-1 items-stretch gap-6 px-6 py-8">
-      <section class="glass-panel min-w-0 flex-1 rounded-[var(--radius-card)] px-10 py-8">
+      <section v-if="documentReady" class="glass-panel min-w-0 flex-1 rounded-[var(--radius-card)] px-10 py-8">
         <ClientOnly>
           <CollaborativeEditor
             v-if="accessToken"
@@ -111,7 +119,7 @@ async function handleRestoreVersion(versionId: string) {
         </ClientOnly>
       </section>
 
-      <aside class="hidden w-80 shrink-0 lg:block">
+      <aside v-if="documentReady" class="hidden w-80 shrink-0 lg:block">
         <CommentsSidebar
           ref="commentsSidebarRef"
           :document-id="route.params.id as string"
