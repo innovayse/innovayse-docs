@@ -31,6 +31,23 @@ public class DocumentsControllerTests
     }
 
     [Fact]
+    public async Task List_ReturnsDocumentsForCaller()
+    {
+        var callerId = Guid.NewGuid();
+        var documents = new List<Document> { new() { Id = Guid.NewGuid(), Title = "Mine", OwnerId = callerId } };
+        var docRepo = new Mock<IDocumentRepository>();
+        docRepo.Setup(r => r.ListForUserAsync(callerId)).ReturnsAsync(documents);
+        var permService = new Mock<IPermissionService>();
+        var controller = new DocumentsController(docRepo.Object, permService.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.List();
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Same(documents, ok.Value);
+    }
+
+    [Fact]
     public async Task Get_UserWithoutViewerRole_ReturnsForbid()
     {
         var document = new Document { Id = Guid.NewGuid(), OwnerId = Guid.NewGuid() };

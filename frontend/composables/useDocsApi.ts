@@ -10,6 +10,9 @@ export function useDocsApi() {
     })
 
   return {
+    listDocuments: () => authedFetch('/documents'),
+    createDocument: (title: string) =>
+      authedFetch('/documents', { method: 'POST', body: { title } }),
     inviteUser: (documentId: string, userId: string, role: string) =>
       authedFetch(`/documents/${documentId}/share/invite`, {
         method: 'POST',

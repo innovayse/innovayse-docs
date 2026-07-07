@@ -37,4 +37,11 @@ public class DocumentRepository : IDocumentRepository
         _context.Documents
             .Where(d => d.FolderId == folderId && d.OwnerId == ownerId)
             .ToListAsync();
+
+    public Task<List<Document>> ListForUserAsync(Guid userId) =>
+        _context.Documents
+            .Where(d => d.OwnerId == userId ||
+                _context.DocumentPermissions.Any(p => p.DocumentId == d.Id && p.UserId == userId))
+            .OrderByDescending(d => d.UpdatedAt)
+            .ToListAsync();
 }

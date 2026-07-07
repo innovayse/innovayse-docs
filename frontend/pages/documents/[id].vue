@@ -10,10 +10,10 @@ const shareOpen = ref(false)
 <template>
   <div class="flex min-h-screen flex-col">
     <header class="glass-panel sticky top-0 z-10 flex items-center justify-between gap-4 border-x-0 border-t-0 px-6 py-3">
-      <div class="flex items-center gap-3">
+      <NuxtLink to="/" class="flex items-center gap-3">
         <img src="/logo.png" alt="Innovayse" class="h-7 w-7 rounded-lg" />
         <span class="text-sm font-semibold text-[var(--text-heading)]">Innovayse Docs</span>
-      </div>
+      </NuxtLink>
       <div class="flex items-center gap-3">
         <span v-if="user" class="hidden text-xs text-[var(--text-subtitle)] sm:inline">
           {{ user.profile.email }}

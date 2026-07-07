@@ -48,6 +48,10 @@ public class DocumentsController : ControllerBase
         return Created($"/documents/{document.Id}", document);
     }
 
+    [HttpGet]
+    public async Task<ActionResult<List<Document>>> List() =>
+        Ok(await _documentRepository.ListForUserAsync(CallerId));
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Document>> Get(Guid id)
     {
