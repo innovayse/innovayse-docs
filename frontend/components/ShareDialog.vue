@@ -41,7 +41,7 @@ async function generateLink() {
             aria-label="Close"
             @click="emit('close')"
           >
-            ✕
+            <Icon name="x-mark" class="h-4 w-4" />
           </button>
         </div>
 

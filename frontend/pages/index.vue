@@ -110,12 +110,13 @@ onMounted(async () => {
           <img src="/logo.png" alt="Innovayse" class="h-7 w-7 rounded-lg" />
           <span class="text-sm font-semibold text-[var(--text-heading)]">Documents</span>
         </div>
-        <div class="hidden max-w-xs flex-1 sm:block">
+        <div class="relative hidden max-w-xs flex-1 sm:block">
+          <Icon name="search" class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
             v-model="searchQuery"
             type="search"
             placeholder="Search documents"
-            class="w-full rounded-[var(--radius-input)] border-0 bg-[var(--input-bg)] px-3 py-1.5 text-sm text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-start)]"
+            class="w-full rounded-[var(--radius-input)] border-0 bg-[var(--input-bg)] py-1.5 pl-8 pr-3 text-sm text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-start)]"
             style="border: var(--input-border)"
           />
         </div>
@@ -137,8 +138,8 @@ onMounted(async () => {
           :disabled="creating"
           @click="createBlankDocument"
         >
-          <span class="accent-gradient flex h-9 w-9 items-center justify-center rounded-full text-lg font-bold text-white">
-            +
+          <span class="accent-gradient flex h-9 w-9 items-center justify-center rounded-full text-white">
+            <Icon name="plus" class="h-5 w-5" />
           </span>
           <span class="text-xs text-[var(--text-subtitle)] group-hover:text-[var(--text-heading)]">
             {{ creating ? 'Creating…' : 'Blank document' }}
@@ -165,14 +166,14 @@ onMounted(async () => {
               : 'border border-white/10 text-[var(--text-subtitle)] hover:bg-white/5'"
             @click="activeFolderId = folder.id"
           >
-            📁 {{ folder.name }}
+            <Icon name="folder" class="mr-1 inline h-3.5 w-3.5 align-[-2px]" /> {{ folder.name }}
           </button>
           <button
-            class="rounded-full border border-dashed border-white/15 px-3 py-1.5 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 disabled:opacity-50"
+            class="inline-flex items-center gap-1 rounded-full border border-dashed border-white/15 px-3 py-1.5 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 disabled:opacity-50"
             :disabled="creatingFolder"
             @click="addFolder"
           >
-            + New folder
+            <Icon name="plus" class="h-3.5 w-3.5" /> New folder
           </button>
         </div>
 
@@ -196,7 +197,7 @@ onMounted(async () => {
           >
             <NuxtLink :to="`/documents/${doc.id}`" class="flex flex-col">
               <div class="flex h-28 items-center justify-center border-b border-white/10 bg-white/[0.02]">
-                <span class="text-2xl">📄</span>
+                <Icon name="document" class="h-8 w-8 text-[var(--text-muted)]" />
               </div>
               <div class="px-3 py-2">
                 <p class="truncate pr-5 text-sm font-medium text-[var(--text-heading)]">{{ doc.title }}</p>
@@ -209,7 +210,7 @@ onMounted(async () => {
               aria-label="Document options"
               @click.prevent.stop="openMenuId = openMenuId === doc.id ? null : doc.id"
             >
-              ⋮
+              <Icon name="dots-vertical" class="h-4 w-4" />
             </button>
             <div
               v-if="openMenuId === doc.id"
@@ -232,7 +233,7 @@ onMounted(async () => {
                 class="w-full rounded-md px-2 py-1.5 text-left text-xs text-[var(--text-body)] hover:bg-white/5"
                 @click.prevent="moveToFolder(doc, folder.id)"
               >
-                📁 {{ folder.name }}
+                <Icon name="folder" class="mr-1 inline h-3.5 w-3.5 align-[-2px]" /> {{ folder.name }}
               </button>
               <div class="my-1 h-px bg-white/10" />
               <button
