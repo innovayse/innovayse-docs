@@ -1,7 +1,8 @@
 import { Server } from '@hocuspocus/server'
-import type { onAuthenticatePayload } from '@hocuspocus/server'
+import type { onAuthenticatePayload, onLoadDocumentPayload } from '@hocuspocus/server'
+import * as Y from 'yjs'
 import { authorize } from './authorize'
-import { persistUpdate } from './persistence'
+import { persistUpdate, loadUpdates } from './persistence'
 
 const API_BASE_URL = process.env.DOCS_API_BASE_URL ?? 'http://localhost:5000'
 
@@ -23,6 +24,16 @@ const server = new Server({
   },
   async onChange(data) {
     await persistUpdate(data.documentName, data.update, data.context.token, API_BASE_URL)
+  },
+  // Hocuspocus starts every newly-loaded Y.Doc empty. Without this, a document
+  // reloaded after being evicted from memory (or after a server restart) loses
+  // all previously persisted content even though it's still in the updates log.
+  async onLoadDocument(data: onLoadDocumentPayload) {
+    const updates = await loadUpdates(data.documentName, data.context.token, API_BASE_URL)
+    for (const update of updates) {
+      Y.applyUpdate(data.document, update)
+    }
+    return data.document
   },
 })
 

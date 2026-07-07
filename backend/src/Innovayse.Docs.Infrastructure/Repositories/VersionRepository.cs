@@ -16,6 +16,12 @@ public class VersionRepository : IVersionRepository
         await _context.SaveChangesAsync();
     }
 
+    public Task<List<DocumentUpdate>> ListUpdatesAsync(Guid documentId) =>
+        _context.DocumentUpdates
+            .Where(u => u.DocumentId == documentId)
+            .OrderBy(u => u.CreatedAt)
+            .ToListAsync();
+
     public Task<List<DocumentVersion>> ListForDocumentAsync(Guid documentId) =>
         _context.DocumentVersions.Where(v => v.DocumentId == documentId).ToListAsync();
 

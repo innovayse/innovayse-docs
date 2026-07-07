@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Security.Claims;
 using Innovayse.Docs.Application.Sharing;
 using Innovayse.Docs.Application.Versions;
@@ -50,5 +51,17 @@ public class UpdatesController : ControllerBase
         });
 
         return NoContent();
+    }
+
+    public record UpdateResponse(string UpdateBase64);
+
+    [HttpGet]
+    public async Task<ActionResult<List<UpdateResponse>>> List(Guid documentId)
+    {
+        if (!await _permissionService.AuthorizeAsync(documentId, CallerId, DocumentRole.Viewer))
+            return Forbid();
+
+        var updates = await _versionRepository.ListUpdatesAsync(documentId);
+        return Ok(updates.Select(u => new UpdateResponse(Convert.ToBase64String(u.UpdateBinary))));
     }
 }

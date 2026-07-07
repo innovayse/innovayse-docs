@@ -34,4 +34,42 @@ public class UpdatesControllerTests
             u.AuthorId == callerId &&
             u.UpdateBinary.SequenceEqual(new byte[] { 1, 2, 3 }))), Times.Once);
     }
+
+    [Fact]
+    public async Task List_ViewerRole_ReturnsEncodedUpdatesInOrder()
+    {
+        var documentId = Guid.NewGuid();
+        var callerId = Guid.NewGuid();
+        var versionRepo = new Mock<IVersionRepository>();
+        var permService = new Mock<IPermissionService>();
+        permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Viewer)).ReturnsAsync(true);
+        versionRepo.Setup(r => r.ListUpdatesAsync(documentId)).ReturnsAsync(new List<DocumentUpdate>
+        {
+            new() { Id = Guid.NewGuid(), DocumentId = documentId, UpdateBinary = new byte[] { 1, 2, 3 }, AuthorId = callerId, CreatedAt = DateTimeOffset.UtcNow },
+        });
+        var controller = new UpdatesController(versionRepo.Object, permService.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.List(documentId);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var body = Assert.IsAssignableFrom<IEnumerable<UpdatesController.UpdateResponse>>(ok.Value);
+        Assert.Equal(Convert.ToBase64String(new byte[] { 1, 2, 3 }), Assert.Single(body).UpdateBase64);
+    }
+
+    [Fact]
+    public async Task List_NoAccess_ReturnsForbid()
+    {
+        var documentId = Guid.NewGuid();
+        var callerId = Guid.NewGuid();
+        var versionRepo = new Mock<IVersionRepository>();
+        var permService = new Mock<IPermissionService>();
+        permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Viewer)).ReturnsAsync(false);
+        var controller = new UpdatesController(versionRepo.Object, permService.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.List(documentId);
+
+        Assert.IsType<ForbidResult>(result.Result);
+    }
 }
