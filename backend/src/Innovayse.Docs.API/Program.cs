@@ -18,6 +18,15 @@ builder.Services.AddScoped<Innovayse.Docs.Application.Sharing.IPermissionService
     Innovayse.Docs.Application.Sharing.PermissionService>();
 builder.Services.AddScoped<Innovayse.Docs.Application.Sharing.IShareLinkRepository,
     Innovayse.Docs.Infrastructure.Repositories.ShareLinkRepository>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient<Innovayse.Docs.Application.Identity.ISsoUserLookupService,
+    Innovayse.Docs.Infrastructure.Identity.SsoUserLookupService>(client =>
+{
+    // sso-api.local (not sso.local) — the bare host is proxied to the SSO *frontend*
+    // container, not its API, and would 404 on this call. See project memory for the
+    // NPM routing gotcha this mirrors.
+    client.BaseAddress = new Uri(builder.Configuration["Sso:ApiBaseUrl"] ?? "http://sso-api.local");
+});
 builder.Services.AddScoped<Innovayse.Docs.Application.Comments.ICommentRepository,
     Innovayse.Docs.Infrastructure.Repositories.CommentRepository>();
 builder.Services.AddScoped<Innovayse.Docs.Application.Versions.IVersionRepository,
