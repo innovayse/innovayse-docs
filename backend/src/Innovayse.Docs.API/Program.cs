@@ -22,6 +22,14 @@ builder.Services.AddScoped<Innovayse.Docs.Application.Versions.IVersionRepositor
     Innovayse.Docs.Infrastructure.Repositories.VersionRepository>();
 
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                ?? ["http://localhost:3100"])
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
 builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -33,6 +41,7 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
