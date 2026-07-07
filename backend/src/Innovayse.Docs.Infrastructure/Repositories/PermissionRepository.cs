@@ -23,6 +23,22 @@ public class PermissionRepository : IPermissionRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task UpsertAsync(DocumentPermission permission)
+    {
+        var existing = await _context.DocumentPermissions
+            .FirstOrDefaultAsync(p => p.DocumentId == permission.DocumentId && p.UserId == permission.UserId);
+        if (existing is null)
+        {
+            _context.DocumentPermissions.Add(permission);
+        }
+        else
+        {
+            existing.Role = permission.Role;
+            existing.GrantedBy = permission.GrantedBy;
+        }
+        await _context.SaveChangesAsync();
+    }
+
     public Task<List<DocumentPermission>> ListForDocumentAsync(Guid documentId) =>
         _context.DocumentPermissions.Where(p => p.DocumentId == documentId).ToListAsync();
 }

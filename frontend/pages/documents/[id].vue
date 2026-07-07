@@ -12,6 +12,7 @@ const versionHistoryOpen = ref(false)
 const title = ref('')
 const savingTitle = ref(false)
 const documentReady = ref(false)
+const shareLinkError = ref('')
 const editorRef = ref<{
   getSnapshotBase64: () => string
   restoreFromSnapshotBase64: (b64: string) => void
@@ -24,9 +25,14 @@ onMounted(async () => {
   if (shareToken) {
     try {
       await redeemShareLink(documentId, shareToken)
-    } catch {
+    } catch (err: any) {
       // Invalid/expired link — fall through to the normal getDocument() call below,
       // which will surface its own permission error if the visitor truly has no access.
+      const status = err?.response?.status ?? err?.statusCode
+      shareLinkError.value =
+        status === 410
+          ? 'This share link has expired.'
+          : 'This share link is invalid.'
     }
     await router.replace({ query: {} })
   }
@@ -104,6 +110,13 @@ async function handleRestoreVersion(versionId: string) {
         </button>
       </div>
     </header>
+
+    <div
+      v-if="shareLinkError"
+      class="mx-auto mt-4 w-full max-w-6xl rounded-[var(--radius-input)] border border-red-400/30 bg-red-400/10 px-4 py-2 text-sm text-red-400"
+    >
+      {{ shareLinkError }}
+    </div>
 
     <div class="mx-auto flex w-full max-w-6xl flex-1 items-stretch gap-6 px-6 py-8">
       <section v-if="documentReady" class="glass-panel min-w-0 flex-1 rounded-[var(--radius-card)] px-10 py-8">

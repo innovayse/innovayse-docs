@@ -40,6 +40,12 @@ public class SharingController : ControllerBase
         Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new InvalidOperationException("Missing sub claim"));
 
+    /// <summary>Roles grantable through invite/share-link — <see cref="DocumentRole.Owner"/> is
+    /// excluded because ownership is fixed at document creation, not something one owner can hand
+    /// out to another user via a share action.</summary>
+    private static bool IsInvitableRole(DocumentRole role) =>
+        role is DocumentRole.Viewer or DocumentRole.Commenter or DocumentRole.Editor;
+
     public class InviteUserRequest
     {
         public string Email { get; set; } = string.Empty;
@@ -47,16 +53,21 @@ public class SharingController : ControllerBase
     }
 
     [HttpPost("invite")]
-    public async Task<IActionResult> InviteUser(Guid documentId, InviteUserRequest request)
+    public async Task<IActionResult> InviteUser(Guid documentId, InviteUserRequest request, CancellationToken ct)
     {
         if (!await _permissionService.AuthorizeAsync(documentId, CallerId, DocumentRole.Owner))
             return Forbid();
 
-        var user = await _ssoUserLookupService.FindByEmailAsync(request.Email);
+        if (!IsInvitableRole(request.Role))
+            return BadRequest(new { message = "Role must be Viewer, Commenter, or Editor" });
+
+        var user = await _ssoUserLookupService.FindByEmailAsync(request.Email, ct);
         if (user is null)
             return NotFound(new { message = "No account found for that email" });
 
-        await _permissionRepository.GrantAsync(new DocumentPermission
+        // Upsert, not a raw grant — re-inviting the same person (e.g. to change their role)
+        // updates their existing permission in place instead of piling up duplicate rows.
+        await _permissionRepository.UpsertAsync(new DocumentPermission
         {
             Id = Guid.NewGuid(),
             DocumentId = documentId,
@@ -79,6 +90,9 @@ public class SharingController : ControllerBase
     {
         if (!await _permissionService.AuthorizeAsync(documentId, CallerId, DocumentRole.Owner))
             return Forbid();
+
+        if (!IsInvitableRole(request.Role))
+            return BadRequest(new { message = "Role must be Viewer, Commenter, or Editor" });
 
         var link = new ShareLink
         {
