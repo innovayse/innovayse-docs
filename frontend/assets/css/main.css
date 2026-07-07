@@ -57,6 +57,14 @@ body {
   box-shadow: var(--card-shadow);
 }
 
+/* The document itself, as a fixed-size A4 sheet sitting inside the surrounding
+   glass panel — a shade lighter than the panel behind it so its edges read as a
+   distinct page rather than blending into the panel's own background. */
+.page-surface {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .accent-gradient {
   background: var(--accent-gradient);
 }

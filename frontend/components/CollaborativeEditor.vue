@@ -129,6 +129,11 @@ defineExpose({ getSnapshotBase64, restoreFromSnapshotBase64, getCursorPosition }
 const zoom = ref(1)
 const pageMarginLeft = ref(48)
 const pageMarginRight = ref(48)
+
+// A4 at 96 CSS px/in: 210mm × 297mm ≈ 794 × 1123px — a fixed page size, like a real
+// document, rather than stretching to fill whatever width the surrounding panel has.
+const PAGE_WIDTH = 794
+const PAGE_MIN_HEIGHT = 1123
 </script>
 
 <template>
@@ -139,11 +144,20 @@ const pageMarginRight = ref(48)
     @insert-comment="emit('insert-comment')"
     @zoom="zoom = $event"
   />
-  <div class="px-10">
+  <div class="mx-auto" :style="{ width: `${PAGE_WIDTH}px`, maxWidth: '100%' }">
     <DocumentRuler v-model:margin-left="pageMarginLeft" v-model:margin-right="pageMarginRight" />
   </div>
-  <div :style="{ zoom }" class="px-10 pb-8 pt-6">
-    <div :style="{ paddingLeft: `${pageMarginLeft}px`, paddingRight: `${pageMarginRight}px` }">
+  <div class="flex justify-center overflow-x-auto px-4 pb-10 pt-6">
+    <div
+      class="page-surface shrink-0 rounded-sm py-12 shadow-xl"
+      :style="{
+        zoom,
+        width: `${PAGE_WIDTH}px`,
+        minHeight: `${PAGE_MIN_HEIGHT}px`,
+        paddingLeft: `${pageMarginLeft}px`,
+        paddingRight: `${pageMarginRight}px`,
+      }"
+    >
       <QuickStartChips v-if="editor && isEditorEmpty" :editor="editor" />
       <EditorContent :editor="editor" class="max-w-none" />
     </div>
