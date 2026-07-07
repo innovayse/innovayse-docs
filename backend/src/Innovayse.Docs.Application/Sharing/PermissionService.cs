@@ -21,20 +21,26 @@ public class PermissionService : IPermissionService
 
     public async Task<bool> AuthorizeAsync(Guid documentId, Guid userId, DocumentRole required)
     {
-        var document = await _documentRepository.GetByIdAsync(documentId);
-        if (document is null) return false;
+        var role = await GetEffectiveRoleAsync(documentId, userId);
+        return role.HasValue && role.Value.Satisfies(required);
+    }
 
-        if (document.OwnerId == userId) return true;
+    public async Task<DocumentRole?> GetEffectiveRoleAsync(Guid documentId, Guid userId)
+    {
+        var document = await _documentRepository.GetByIdAsync(documentId);
+        if (document is null) return null;
+
+        if (document.OwnerId == userId) return DocumentRole.Owner;
 
         var documentRole = await _permissionRepository.GetRoleAsync(documentId, userId);
-        if (documentRole.HasValue) return documentRole.Value.Satisfies(required);
+        if (documentRole.HasValue) return documentRole.Value;
 
         if (document.FolderId.HasValue)
         {
             var folderRole = await _folderPermissionRepository.GetRoleAsync(document.FolderId.Value, userId);
-            if (folderRole.HasValue) return folderRole.Value.Satisfies(required);
+            if (folderRole.HasValue) return folderRole.Value;
         }
 
-        return false;
+        return null;
     }
 }

@@ -14,9 +14,9 @@ public class CollabAuthorizationControllerTests
     {
         var documentId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var permRepo = new Mock<IPermissionRepository>();
-        permRepo.Setup(r => r.GetRoleAsync(documentId, userId)).ReturnsAsync(DocumentRole.Editor);
-        var controller = new CollabAuthorizationController(permRepo.Object);
+        var permissionService = new Mock<IPermissionService>();
+        permissionService.Setup(s => s.GetEffectiveRoleAsync(documentId, userId)).ReturnsAsync(DocumentRole.Editor);
+        var controller = new CollabAuthorizationController(permissionService.Object);
         controller.SetCallerIdForTesting(userId);
 
         var result = await controller.Authorize(documentId);
@@ -27,13 +27,30 @@ public class CollabAuthorizationControllerTests
     }
 
     [Fact]
+    public async Task Authorize_DocumentOwner_ReturnsOwnerRole()
+    {
+        var documentId = Guid.NewGuid();
+        var ownerId = Guid.NewGuid();
+        var permissionService = new Mock<IPermissionService>();
+        permissionService.Setup(s => s.GetEffectiveRoleAsync(documentId, ownerId)).ReturnsAsync(DocumentRole.Owner);
+        var controller = new CollabAuthorizationController(permissionService.Object);
+        controller.SetCallerIdForTesting(ownerId);
+
+        var result = await controller.Authorize(documentId);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var body = Assert.IsType<CollabAuthorizationController.AuthorizeResponse>(ok.Value);
+        Assert.Equal(DocumentRole.Owner, body.Role);
+    }
+
+    [Fact]
     public async Task Authorize_UserWithoutRole_ReturnsForbid()
     {
         var documentId = Guid.NewGuid();
         var userId = Guid.NewGuid();
-        var permRepo = new Mock<IPermissionRepository>();
-        permRepo.Setup(r => r.GetRoleAsync(documentId, userId)).ReturnsAsync((DocumentRole?)null);
-        var controller = new CollabAuthorizationController(permRepo.Object);
+        var permissionService = new Mock<IPermissionService>();
+        permissionService.Setup(s => s.GetEffectiveRoleAsync(documentId, userId)).ReturnsAsync((DocumentRole?)null);
+        var controller = new CollabAuthorizationController(permissionService.Object);
         controller.SetCallerIdForTesting(userId);
 
         var result = await controller.Authorize(documentId);

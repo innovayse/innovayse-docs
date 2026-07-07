@@ -10,11 +10,11 @@ namespace Innovayse.Docs.API.Collab;
 [Authorize]
 public class CollabAuthorizationController : ControllerBase
 {
-    private readonly IPermissionRepository _permissionRepository;
+    private readonly IPermissionService _permissionService;
     private Guid? _callerIdOverride;
 
-    public CollabAuthorizationController(IPermissionRepository permissionRepository) =>
-        _permissionRepository = permissionRepository;
+    public CollabAuthorizationController(IPermissionService permissionService) =>
+        _permissionService = permissionService;
 
     internal void SetCallerIdForTesting(Guid callerId) => _callerIdOverride = callerId;
 
@@ -27,7 +27,7 @@ public class CollabAuthorizationController : ControllerBase
     [HttpGet("authorize")]
     public async Task<ActionResult<AuthorizeResponse>> Authorize(Guid documentId)
     {
-        var role = await _permissionRepository.GetRoleAsync(documentId, CallerId);
+        var role = await _permissionService.GetEffectiveRoleAsync(documentId, CallerId);
         if (role is null) return Forbid();
         return Ok(new AuthorizeResponse(role.Value));
     }

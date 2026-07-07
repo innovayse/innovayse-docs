@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +23,13 @@ builder.Services.AddScoped<Innovayse.Docs.Application.Comments.ICommentRepositor
 builder.Services.AddScoped<Innovayse.Docs.Application.Versions.IVersionRepository,
     Innovayse.Docs.Infrastructure.Repositories.VersionRepository>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        // Frontend and the collab service compare roles as strings (e.g. "Viewer");
+        // without this, DocumentRole serializes as its raw int and those checks
+        // silently never match (readOnly is always false, invite/share requests
+        // fail to bind).
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -34,8 +42,14 @@ builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer
     .AddJwtBearer(options =>
     {
         options.Authority = builder.Configuration["Sso:Authority"] ?? "http://sso.local";
-        options.Audience = builder.Configuration["Sso:Audience"] ?? "innovayse-docs";
         options.RequireHttpsMetadata = builder.Environment.IsProduction();
+        // OpenIddict access tokens carry no `aud` claim by default — matches the
+        // ValidateAudience=false pattern used by the other Innovayse SSO clients
+        // (see hostpanel/innovayse-main Program.cs).
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateAudience = false,
+        };
     });
 builder.Services.AddAuthorization();
 
