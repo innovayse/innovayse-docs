@@ -6,10 +6,14 @@ await loadUser()
 </script>
 
 <template>
-  <CollaborativeEditor
-    v-if="accessToken"
-    :document-id="route.params.id as string"
-    :access-token="accessToken"
-    :user-name="user?.profile.name ?? 'Anonymous'"
-  />
+  <div class="document-layout">
+    <CollaborativeEditor
+      v-if="accessToken"
+      :document-id="route.params.id as string"
+      :access-token="accessToken"
+      :user-name="user?.profile.name ?? 'Anonymous'"
+    />
+    <ShareDialog :document-id="route.params.id as string" />
+    <CommentsSidebar :document-id="route.params.id as string" />
+  </div>
 </template>
