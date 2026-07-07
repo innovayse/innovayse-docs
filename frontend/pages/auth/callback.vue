@@ -11,7 +11,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="flex min-h-screen items-center justify-center">
-    <p>Signing you in...</p>
+  <main class="flex min-h-screen items-center justify-center gap-3 text-[var(--text-subtitle)]">
+    <span class="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-[var(--accent-start)]" />
+    <p class="text-sm">Signing you in...</p>
   </main>
 </template>

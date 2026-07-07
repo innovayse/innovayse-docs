@@ -4,26 +4,57 @@ const { listComments, createComment } = useDocsApi()
 
 const comments = ref<Array<{ id: string; text: string; authorId: string }>>([])
 const newCommentText = ref('')
+const posting = ref(false)
 
 async function refresh() {
   comments.value = (await listComments(props.documentId)) as typeof comments.value
 }
 
 async function submit() {
-  await createComment(props.documentId, newCommentText.value, 0)
-  newCommentText.value = ''
-  await refresh()
+  if (!newCommentText.value.trim()) return
+  posting.value = true
+  try {
+    await createComment(props.documentId, newCommentText.value, 0)
+    newCommentText.value = ''
+    await refresh()
+  } finally {
+    posting.value = false
+  }
 }
 
 onMounted(refresh)
 </script>
 
 <template>
-  <aside class="comments-sidebar">
-    <ul>
-      <li v-for="comment in comments" :key="comment.id">{{ comment.text }}</li>
+  <aside class="glass-panel flex h-full flex-col rounded-[var(--radius-panel)] p-4">
+    <h2 class="mb-3 text-sm font-semibold text-[var(--text-heading)]">Comments</h2>
+
+    <ul class="flex-1 space-y-2 overflow-y-auto">
+      <li
+        v-for="comment in comments"
+        :key="comment.id"
+        class="rounded-[var(--radius-input)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-body)]"
+      >
+        {{ comment.text }}
+      </li>
+      <li v-if="!comments.length" class="text-xs text-[var(--text-muted)]">No comments yet.</li>
     </ul>
-    <textarea v-model="newCommentText" />
-    <button @click="submit">Comment</button>
+
+    <div class="mt-3 space-y-2 border-t border-white/10 pt-3">
+      <textarea
+        v-model="newCommentText"
+        rows="2"
+        placeholder="Add a comment…"
+        class="w-full resize-none rounded-[var(--radius-input)] border-0 bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-start)]"
+        style="border: var(--input-border)"
+      />
+      <button
+        class="accent-gradient w-full rounded-[var(--radius-input)] px-3 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
+        :disabled="!newCommentText.trim() || posting"
+        @click="submit"
+      >
+        {{ posting ? 'Posting…' : 'Comment' }}
+      </button>
+    </div>
   </aside>
 </template>

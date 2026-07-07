@@ -3,6 +3,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   modules: ['@nuxtjs/tailwindcss'],
+  css: ['~/assets/css/main.css'],
   runtimeConfig: {
     public: {
       ssoAuthority: process.env.NUXT_PUBLIC_SSO_AUTHORITY ?? 'http://sso.local',

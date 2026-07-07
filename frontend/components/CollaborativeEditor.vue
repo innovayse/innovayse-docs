@@ -35,5 +35,5 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <EditorContent :editor="editor" />
+  <EditorContent :editor="editor" class="max-w-none" />
 </template>
