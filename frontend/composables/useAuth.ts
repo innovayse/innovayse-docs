@@ -6,6 +6,8 @@ function getUserManager(): UserManager {
   if (userManager) return userManager
 
   const config = useRuntimeConfig()
+  // Same useState key as useAuth()'s — Nuxt caches by key, so this is the same ref.
+  const user = useState<User | null>('auth-user', () => null)
 
   userManager = new UserManager({
     authority: config.public.ssoAuthority as string,
@@ -13,7 +15,28 @@ function getUserManager(): UserManager {
     redirect_uri: `${window.location.origin}/auth/callback`,
     post_logout_redirect_uri: window.location.origin,
     response_type: 'code',
-    scope: 'openid profile email',
+    // 'offline_access' gets us a refresh token — SSO already grants this client the
+    // RefreshToken grant type — and automaticSilentRenew uses it to renew the access
+    // token in the background before it expires. Without this, the ~15min access token
+    // just goes stale and every authenticated call (including document creation) starts
+    // silently 401ing until the user manually logs out and back in.
+    scope: 'openid profile email offline_access',
+    automaticSilentRenew: true,
+  })
+
+  // Silent renewal happens inside oidc-client-ts's own background timer, not through any
+  // of our own functions — without this listener our reactive `user` (and the `accessToken`
+  // computed from it) would keep pointing at the stale pre-renewal token forever.
+  userManager.events.addUserLoaded((renewedUser) => {
+    user.value = renewedUser
+  })
+  userManager.events.addUserUnloaded(() => {
+    user.value = null
+  })
+  userManager.events.addSilentRenewError((error) => {
+    // Refresh token itself expired/revoked — nothing left to do silently; the next
+    // authenticated call will 401 and the user has to log in again.
+    console.error('Silent token renew failed', error)
   })
 
   return userManager
