@@ -1,9 +1,10 @@
 <!-- pages/documents/[id].vue -->
 <script setup lang="ts">
 const route = useRoute()
+const router = useRouter()
 const documentId = route.params.id as string
 const { accessToken, user, loadUser } = useAuth()
-const { getDocument, renameDocument, createVersion, restoreVersion, listVersions } = useDocsApi()
+const { getDocument, renameDocument, createVersion, restoreVersion, listVersions, redeemShareLink } = useDocsApi()
 await loadUser()
 
 const shareOpen = ref(false)
@@ -18,6 +19,17 @@ const editorRef = ref<{
 const commentsSidebarRef = ref<{ focusNewComment: () => void } | null>(null)
 
 onMounted(async () => {
+  const shareToken = route.query.share as string | undefined
+  if (shareToken) {
+    try {
+      await redeemShareLink(documentId, shareToken)
+    } catch {
+      // Invalid/expired link — fall through to the normal getDocument() call below,
+      // which will surface its own permission error if the visitor truly has no access.
+    }
+    await router.replace({ query: {} })
+  }
+
   const doc = (await getDocument(documentId)) as { title: string }
   title.value = doc.title
 })
