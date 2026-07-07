@@ -38,6 +38,31 @@ public class VersionsController : ControllerBase
         return Ok(await _versionRepository.ListForDocumentAsync(documentId));
     }
 
+    public class CreateVersionRequest
+    {
+        public string SnapshotBase64 { get; set; } = string.Empty;
+        public string? Label { get; set; }
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<DocumentVersion>> Create(Guid documentId, CreateVersionRequest request)
+    {
+        if (!await _permissionService.AuthorizeAsync(documentId, CallerId, DocumentRole.Editor))
+            return Forbid();
+
+        var version = new DocumentVersion
+        {
+            Id = Guid.NewGuid(),
+            DocumentId = documentId,
+            Snapshot = Convert.FromBase64String(request.SnapshotBase64),
+            CreatedBy = CallerId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            Label = request.Label,
+        };
+        await _versionRepository.CreateVersionAsync(version);
+        return Created($"/documents/{documentId}/versions/{version.Id}", version);
+    }
+
     [HttpPost("{versionId}/restore")]
     public async Task<IActionResult> Restore(Guid documentId, Guid versionId)
     {

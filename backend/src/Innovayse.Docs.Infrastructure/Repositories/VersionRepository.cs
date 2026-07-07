@@ -22,8 +22,17 @@ public class VersionRepository : IVersionRepository
             .OrderBy(u => u.CreatedAt)
             .ToListAsync();
 
+    public async Task CreateVersionAsync(DocumentVersion version)
+    {
+        _context.DocumentVersions.Add(version);
+        await _context.SaveChangesAsync();
+    }
+
     public Task<List<DocumentVersion>> ListForDocumentAsync(Guid documentId) =>
-        _context.DocumentVersions.Where(v => v.DocumentId == documentId).ToListAsync();
+        _context.DocumentVersions
+            .Where(v => v.DocumentId == documentId)
+            .OrderByDescending(v => v.CreatedAt)
+            .ToListAsync();
 
     public async Task RestoreAsync(Guid documentId, Guid versionId)
     {

@@ -40,5 +40,14 @@ export function useDocsApi() {
         method: 'POST',
         body: { text, anchorPosition },
       }),
+    listVersions: (documentId: string) =>
+      authedFetch(`/documents/${documentId}/versions`),
+    createVersion: (documentId: string, snapshotBase64: string, label?: string) =>
+      authedFetch(`/documents/${documentId}/versions`, {
+        method: 'POST',
+        body: { snapshotBase64, label },
+      }),
+    restoreVersion: (documentId: string, versionId: string) =>
+      authedFetch(`/documents/${documentId}/versions/${versionId}/restore`, { method: 'POST' }),
   }
 }

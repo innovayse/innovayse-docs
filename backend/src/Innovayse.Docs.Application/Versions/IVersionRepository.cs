@@ -6,6 +6,7 @@ public interface IVersionRepository
 {
     Task AppendUpdateAsync(DocumentUpdate update);
     Task<List<DocumentUpdate>> ListUpdatesAsync(Guid documentId);
+    Task CreateVersionAsync(DocumentVersion version);
     Task<List<DocumentVersion>> ListForDocumentAsync(Guid documentId);
     Task RestoreAsync(Guid documentId, Guid versionId);
 }

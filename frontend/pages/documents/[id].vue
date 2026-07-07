@@ -3,12 +3,14 @@
 const route = useRoute()
 const documentId = route.params.id as string
 const { accessToken, user, loadUser } = useAuth()
-const { getDocument, renameDocument } = useDocsApi()
+const { getDocument, renameDocument, createVersion, restoreVersion, listVersions } = useDocsApi()
 await loadUser()
 
 const shareOpen = ref(false)
+const versionHistoryOpen = ref(false)
 const title = ref('')
 const savingTitle = ref(false)
+const editorRef = ref<{ getSnapshotBase64: () => string; restoreFromSnapshotBase64: (b64: string) => void } | null>(null)
 
 onMounted(async () => {
   const doc = (await getDocument(documentId)) as { title: string }
@@ -26,6 +28,20 @@ async function saveTitle() {
   } finally {
     savingTitle.value = false
   }
+}
+
+async function handleSaveVersion(label: string | undefined) {
+  const snapshot = editorRef.value?.getSnapshotBase64()
+  if (!snapshot) return
+  await createVersion(documentId, snapshot, label)
+}
+
+async function handleRestoreVersion(versionId: string) {
+  const versions = (await listVersions(documentId)) as Array<{ id: string; snapshot: string }>
+  const version = versions.find((v) => v.id === versionId)
+  if (!version) return
+  editorRef.value?.restoreFromSnapshotBase64(version.snapshot)
+  await restoreVersion(documentId, versionId)
 }
 </script>
 
@@ -50,6 +66,12 @@ async function saveTitle() {
           {{ user.profile.email }}
         </span>
         <button
+          class="rounded-[var(--radius-input)] border border-white/10 px-3 py-2 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 hover:text-[var(--text-heading)]"
+          @click="versionHistoryOpen = true"
+        >
+          History
+        </button>
+        <button
           class="accent-gradient rounded-[var(--radius-input)] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-sky-500/20 transition hover:brightness-110"
           @click="shareOpen = true"
         >
@@ -63,6 +85,7 @@ async function saveTitle() {
         <ClientOnly>
           <CollaborativeEditor
             v-if="accessToken"
+            ref="editorRef"
             :document-id="route.params.id as string"
             :access-token="accessToken"
             :user-name="user?.profile.name ?? 'Anonymous'"
@@ -79,6 +102,13 @@ async function saveTitle() {
       :document-id="route.params.id as string"
       :open="shareOpen"
       @close="shareOpen = false"
+    />
+    <VersionHistoryDialog
+      :document-id="documentId"
+      :open="versionHistoryOpen"
+      :on-save-version="handleSaveVersion"
+      :on-restore-version="handleRestoreVersion"
+      @close="versionHistoryOpen = false"
     />
   </div>
 </template>
