@@ -15,6 +15,7 @@ const editorRef = ref<{
   restoreFromSnapshotBase64: (b64: string) => void
   getCursorPosition: () => number
 } | null>(null)
+const commentsSidebarRef = ref<{ focusNewComment: () => void } | null>(null)
 
 onMounted(async () => {
   const doc = (await getDocument(documentId)) as { title: string }
@@ -93,12 +94,14 @@ async function handleRestoreVersion(versionId: string) {
             :document-id="route.params.id as string"
             :access-token="accessToken"
             :user-name="user?.profile.name ?? 'Anonymous'"
+            @insert-comment="commentsSidebarRef?.focusNewComment()"
           />
         </ClientOnly>
       </section>
 
       <aside class="hidden w-80 shrink-0 lg:block">
         <CommentsSidebar
+          ref="commentsSidebarRef"
           :document-id="route.params.id as string"
           :get-anchor-position="() => editorRef?.getCursorPosition() ?? 0"
         />

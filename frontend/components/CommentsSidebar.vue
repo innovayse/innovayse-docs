@@ -26,6 +26,13 @@ async function submit() {
 }
 
 onMounted(refresh)
+
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
+function focusNewComment() {
+  textareaRef.value?.focus()
+}
+
+defineExpose({ focusNewComment })
 </script>
 
 <template>
@@ -45,6 +52,7 @@ onMounted(refresh)
 
     <div class="mt-3 space-y-2 border-t border-white/10 pt-3">
       <textarea
+        ref="textareaRef"
         v-model="newCommentText"
         rows="2"
         placeholder="Add a comment…"

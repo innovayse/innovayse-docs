@@ -1,0 +1,449 @@
+<!-- components/EditorToolbar.vue -->
+<script setup lang="ts">
+import type { Editor } from '@tiptap/vue-3'
+import * as Y from 'yjs'
+
+const props = defineProps<{ editor: Editor; undoManager: Y.UndoManager }>()
+const emit = defineEmits<{ 'insert-comment': []; zoom: [level: number] }>()
+
+// Tiptap's `editor.isActive()`/`can()` calls aren't reactive on their own in
+// Vue — bumping this on every transaction forces the active-state computeds
+// below to re-evaluate.
+const tick = ref(0)
+props.editor.on('transaction', () => {
+  tick.value++
+})
+
+const canUndo = ref(false)
+const canRedo = ref(false)
+function refreshUndoState() {
+  canUndo.value = props.undoManager.undoStack.length > 0
+  canRedo.value = props.undoManager.redoStack.length > 0
+}
+refreshUndoState()
+props.undoManager.on('stack-item-added', refreshUndoState)
+props.undoManager.on('stack-item-popped', refreshUndoState)
+
+function isActive(name: string | Record<string, unknown>, attrs?: Record<string, unknown>) {
+  tick.value // eslint-disable-line no-unused-expressions -- establish reactive dependency
+  return typeof name === 'string' ? props.editor.isActive(name, attrs) : props.editor.isActive(name)
+}
+
+const headingValue = computed(() => {
+  tick.value
+  if (props.editor.isActive('heading', { level: 1 })) return 'h1'
+  if (props.editor.isActive('heading', { level: 2 })) return 'h2'
+  if (props.editor.isActive('heading', { level: 3 })) return 'h3'
+  return 'p'
+})
+
+function applyStyle(value: string) {
+  const chain = props.editor.chain().focus()
+  if (value === 'p') chain.setParagraph().run()
+  else chain.toggleHeading({ level: Number(value.slice(1)) as 1 | 2 | 3 }).run()
+}
+
+const fontFamilyValue = computed(() => {
+  tick.value
+  return (props.editor.getAttributes('textStyle').fontFamily as string | undefined) ?? ''
+})
+function applyFontFamily(value: string) {
+  const chain = props.editor.chain().focus()
+  if (!value) chain.unsetFontFamily().run()
+  else chain.setFontFamily(value).run()
+}
+
+const fontSizeValue = computed(() => {
+  tick.value
+  return (props.editor.getAttributes('textStyle').fontSize as string | undefined) ?? ''
+})
+function applyFontSize(value: string) {
+  const chain = props.editor.chain().focus()
+  if (!value) (chain as any).unsetFontSize().run()
+  else (chain as any).setFontSize(`${value}px`).run()
+}
+
+const lineHeightValue = computed(() => {
+  tick.value
+  return (props.editor.getAttributes('paragraph').lineHeight as string | undefined) ?? ''
+})
+function applyLineHeight(value: string) {
+  ;(props.editor.chain().focus() as any).setLineHeight(value).run()
+}
+
+function setLink() {
+  const previousUrl = props.editor.getAttributes('link').href as string | undefined
+  const url = window.prompt('Link URL', previousUrl ?? 'https://')
+  if (url === null) return
+  const chain = props.editor.chain().focus()
+  if (url === '') chain.unsetLink().run()
+  else chain.setLink({ href: url }).run()
+}
+
+function insertImage() {
+  const url = window.prompt('Image URL')
+  if (!url) return
+  props.editor.chain().focus().setImage({ src: url }).run()
+}
+
+function insertTable() {
+  props.editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
+}
+
+function setTextColor(event: Event) {
+  const color = (event.target as HTMLInputElement).value
+  props.editor.chain().focus().setColor(color).run()
+}
+
+function setHighlight(event: Event) {
+  const color = (event.target as HTMLInputElement).value
+  props.editor.chain().focus().toggleHighlight({ color }).run()
+}
+
+function clearFormatting() {
+  props.editor.chain().focus().unsetAllMarks().clearNodes().run()
+}
+
+function printDocument() {
+  window.print()
+}
+
+const spellcheckEnabled = ref(true)
+function toggleSpellcheck() {
+  spellcheckEnabled.value = !spellcheckEnabled.value
+  ;(props.editor.view.dom as HTMLElement).setAttribute('spellcheck', String(spellcheckEnabled.value))
+}
+
+// Format painter: copy the marks at the current cursor, then apply them to
+// the next non-empty selection the user makes.
+const painting = ref(false)
+let copiedMarks: ReturnType<Editor['state']['selection']['$from']['marks']> = []
+function startPaintFormat() {
+  copiedMarks = props.editor.state.selection.$from.marks()
+  painting.value = true
+}
+props.editor.on('selectionUpdate', () => {
+  if (!painting.value) return
+  const { from, to } = props.editor.state.selection
+  if (from === to) return
+  const chain = props.editor.chain().focus().setTextSelection({ from, to }).unsetAllMarks()
+  for (const mark of copiedMarks) chain.setMark(mark.type.name, mark.attrs)
+  chain.run()
+  painting.value = false
+})
+
+const zoomLevel = ref(100)
+function applyZoom(event: Event) {
+  zoomLevel.value = Number((event.target as HTMLSelectElement).value)
+  emit('zoom', zoomLevel.value / 100)
+}
+</script>
+
+<template>
+  <div class="flex flex-wrap items-center gap-1 border-b border-white/10 px-2 py-2">
+    <button type="button" title="Undo" class="toolbar-btn" :disabled="!canUndo" @click="undoManager.undo()">
+      <Icon name="arrow-undo" class="h-4 w-4" />
+    </button>
+    <button type="button" title="Redo" class="toolbar-btn" :disabled="!canRedo" @click="undoManager.redo()">
+      <Icon name="arrow-redo" class="h-4 w-4" />
+    </button>
+    <button type="button" title="Print" class="toolbar-btn" @click="printDocument">
+      <Icon name="printer" class="h-4 w-4" />
+    </button>
+    <button
+      type="button"
+      title="Toggle spellcheck"
+      class="toolbar-btn"
+      :class="{ 'toolbar-btn-active': spellcheckEnabled }"
+      @click="toggleSpellcheck"
+    >
+      <Icon name="spellcheck" class="h-4 w-4" />
+    </button>
+    <button
+      type="button"
+      title="Paint format — copy formatting, then select text to apply it"
+      class="toolbar-btn"
+      :class="{ 'toolbar-btn-active': painting }"
+      @click="startPaintFormat"
+    >
+      <Icon name="paint-roller" class="h-4 w-4" />
+    </button>
+
+    <span class="toolbar-divider" />
+
+    <select class="toolbar-select" title="Zoom" :value="zoomLevel" @change="applyZoom">
+      <option :value="50">50%</option>
+      <option :value="75">75%</option>
+      <option :value="90">90%</option>
+      <option :value="100">100%</option>
+      <option :value="125">125%</option>
+      <option :value="150">150%</option>
+      <option :value="200">200%</option>
+    </select>
+
+    <span class="toolbar-divider" />
+
+    <select
+      class="toolbar-select"
+      title="Text style"
+      :value="headingValue"
+      @change="applyStyle(($event.target as HTMLSelectElement).value)"
+    >
+      <option value="p">Normal text</option>
+      <option value="h1">Heading 1</option>
+      <option value="h2">Heading 2</option>
+      <option value="h3">Heading 3</option>
+    </select>
+
+    <select
+      class="toolbar-select"
+      title="Font family"
+      :value="fontFamilyValue"
+      @change="applyFontFamily(($event.target as HTMLSelectElement).value)"
+    >
+      <option value="">Default font</option>
+      <option value="Arial">Arial</option>
+      <option value="Georgia">Georgia</option>
+      <option value="'Times New Roman'">Times New Roman</option>
+      <option value="'Courier New'">Courier New</option>
+      <option value="Verdana">Verdana</option>
+    </select>
+
+    <select
+      class="toolbar-select w-16"
+      title="Font size"
+      :value="fontSizeValue.replace('px', '')"
+      @change="applyFontSize(($event.target as HTMLSelectElement).value)"
+    >
+      <option value="">--</option>
+      <option v-for="size in [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48]" :key="size" :value="size">
+        {{ size }}
+      </option>
+    </select>
+
+    <span class="toolbar-divider" />
+
+    <button
+      type="button"
+      title="Bold"
+      class="toolbar-btn font-bold"
+      :class="{ 'toolbar-btn-active': isActive('bold') }"
+      @click="editor.chain().focus().toggleBold().run()"
+    >
+      B
+    </button>
+    <button
+      type="button"
+      title="Italic"
+      class="toolbar-btn italic"
+      :class="{ 'toolbar-btn-active': isActive('italic') }"
+      @click="editor.chain().focus().toggleItalic().run()"
+    >
+      I
+    </button>
+    <button
+      type="button"
+      title="Underline"
+      class="toolbar-btn underline"
+      :class="{ 'toolbar-btn-active': isActive('underline') }"
+      @click="editor.chain().focus().toggleUnderline().run()"
+    >
+      U
+    </button>
+    <button
+      type="button"
+      title="Strikethrough"
+      class="toolbar-btn line-through"
+      :class="{ 'toolbar-btn-active': isActive('strike') }"
+      @click="editor.chain().focus().toggleStrike().run()"
+    >
+      S
+    </button>
+
+    <label class="toolbar-btn cursor-pointer" title="Text color">
+      <span class="border-b-2 border-current px-0.5">A</span>
+      <input type="color" class="sr-only" @input="setTextColor" />
+    </label>
+    <label class="toolbar-btn cursor-pointer" title="Highlight color">
+      <span class="rounded-sm bg-current/20 px-0.5">H</span>
+      <input type="color" class="sr-only" @input="setHighlight" />
+    </label>
+
+    <button
+      type="button"
+      title="Insert link"
+      class="toolbar-btn"
+      :class="{ 'toolbar-btn-active': isActive('link') }"
+      @click="setLink"
+    >
+      <Icon name="link" class="h-4 w-4" />
+    </button>
+    <button type="button" title="Insert comment" class="toolbar-btn" @click="emit('insert-comment')">
+      <Icon name="chat-bubble" class="h-4 w-4" />
+    </button>
+    <button type="button" title="Insert image" class="toolbar-btn" @click="insertImage">
+      <Icon name="photo" class="h-4 w-4" />
+    </button>
+    <button type="button" title="Insert table" class="toolbar-btn" @click="insertTable">
+      <Icon name="table" class="h-4 w-4" />
+    </button>
+
+    <span class="toolbar-divider" />
+
+    <button
+      type="button"
+      title="Bulleted list"
+      class="toolbar-btn"
+      :class="{ 'toolbar-btn-active': isActive('bulletList') }"
+      @click="editor.chain().focus().toggleBulletList().run()"
+    >
+      <Icon name="bullet-list" class="h-4 w-4" />
+    </button>
+    <button
+      type="button"
+      title="Numbered list"
+      class="toolbar-btn"
+      :class="{ 'toolbar-btn-active': isActive('orderedList') }"
+      @click="editor.chain().focus().toggleOrderedList().run()"
+    >
+      <Icon name="ordered-list" class="h-4 w-4" />
+    </button>
+    <button
+      type="button"
+      title="Checklist"
+      class="toolbar-btn"
+      :class="{ 'toolbar-btn-active': isActive('taskList') }"
+      @click="editor.chain().focus().toggleTaskList().run()"
+    >
+      <Icon name="task-list" class="h-4 w-4" />
+    </button>
+
+    <button
+      type="button"
+      title="Decrease indent"
+      class="toolbar-btn"
+      @click="editor.chain().focus().liftListItem('listItem').run()"
+    >
+      <Icon name="indent-decrease" class="h-4 w-4" />
+    </button>
+    <button
+      type="button"
+      title="Increase indent"
+      class="toolbar-btn"
+      @click="editor.chain().focus().sinkListItem('listItem').run()"
+    >
+      <Icon name="indent-increase" class="h-4 w-4" />
+    </button>
+
+    <span class="toolbar-divider" />
+
+    <button
+      type="button"
+      title="Align left"
+      class="toolbar-btn"
+      :class="{ 'toolbar-btn-active': isActive({ textAlign: 'left' }) }"
+      @click="editor.chain().focus().setTextAlign('left').run()"
+    >
+      <Icon name="align-left" class="h-4 w-4" />
+    </button>
+    <button
+      type="button"
+      title="Align center"
+      class="toolbar-btn"
+      :class="{ 'toolbar-btn-active': isActive({ textAlign: 'center' }) }"
+      @click="editor.chain().focus().setTextAlign('center').run()"
+    >
+      <Icon name="align-center" class="h-4 w-4" />
+    </button>
+    <button
+      type="button"
+      title="Align right"
+      class="toolbar-btn"
+      :class="{ 'toolbar-btn-active': isActive({ textAlign: 'right' }) }"
+      @click="editor.chain().focus().setTextAlign('right').run()"
+    >
+      <Icon name="align-right" class="h-4 w-4" />
+    </button>
+    <button
+      type="button"
+      title="Justify"
+      class="toolbar-btn"
+      :class="{ 'toolbar-btn-active': isActive({ textAlign: 'justify' }) }"
+      @click="editor.chain().focus().setTextAlign('justify').run()"
+    >
+      <Icon name="align-justify" class="h-4 w-4" />
+    </button>
+
+    <select
+      class="toolbar-select"
+      title="Line spacing"
+      :value="lineHeightValue"
+      @change="applyLineHeight(($event.target as HTMLSelectElement).value)"
+    >
+      <option value="">Spacing</option>
+      <option value="1">Single</option>
+      <option value="1.15">1.15</option>
+      <option value="1.5">1.5</option>
+      <option value="2">Double</option>
+    </select>
+
+    <span class="toolbar-divider" />
+
+    <button type="button" title="Clear formatting" class="toolbar-btn" @click="clearFormatting">
+      <Icon name="clear-format" class="h-4 w-4" />
+    </button>
+  </div>
+</template>
+
+<style scoped>
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.4rem;
+  border-radius: var(--radius-input);
+  color: var(--text-subtitle);
+  font-size: 0.8rem;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.toolbar-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-heading);
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.toolbar-btn-active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-heading);
+}
+
+.toolbar-select {
+  height: 2rem;
+  border-radius: var(--radius-input);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  padding: 0 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-subtitle);
+  max-width: 9rem;
+}
+
+.toolbar-select:hover {
+  color: var(--text-heading);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 1.25rem;
+  margin: 0 0.25rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+</style>

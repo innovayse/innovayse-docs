@@ -5,10 +5,27 @@ import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Collaboration from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
+import Underline from '@tiptap/extension-underline'
+import TextAlign from '@tiptap/extension-text-align'
+import TextStyle from '@tiptap/extension-text-style'
+import Color from '@tiptap/extension-color'
+import Highlight from '@tiptap/extension-highlight'
+import Link from '@tiptap/extension-link'
+import TaskList from '@tiptap/extension-task-list'
+import TaskItem from '@tiptap/extension-task-item'
+import FontFamily from '@tiptap/extension-font-family'
+import Image from '@tiptap/extension-image'
+import Table from '@tiptap/extension-table'
+import TableRow from '@tiptap/extension-table-row'
+import TableCell from '@tiptap/extension-table-cell'
+import TableHeader from '@tiptap/extension-table-header'
 import * as Y from 'yjs'
-import { yDocToProsemirrorJSON } from 'y-prosemirror'
+import { yDocToProsemirrorJSON, ySyncPluginKey } from 'y-prosemirror'
+import { FontSize } from '~/composables/useFontSize'
+import { LineHeight } from '~/composables/useLineHeight'
 
 const props = defineProps<{ documentId: string; accessToken: string; userName: string }>()
+const emit = defineEmits<{ 'insert-comment': [] }>()
 
 const ydoc = new Y.Doc()
 const provider = new HocuspocusProvider({
@@ -16,6 +33,15 @@ const provider = new HocuspocusProvider({
   name: props.documentId,
   token: props.accessToken,
   document: ydoc,
+})
+
+// Tiptap's Collaboration extension defers undo/redo entirely to Yjs — StarterKit's
+// own history is disabled below, so this UndoManager is the only undo/redo there is.
+// It must track the same shared type Collaboration binds to (the 'default' XML fragment),
+// and the origin y-prosemirror's sync plugin actually stamps local edits with
+// (ySyncPluginKey) — not the doc's clientID, which local edits are never tagged with.
+const undoManager = new Y.UndoManager(ydoc.getXmlFragment('default'), {
+  trackedOrigins: new Set([ySyncPluginKey]),
 })
 
 const editor = useEditor({
@@ -26,7 +52,35 @@ const editor = useEditor({
       provider,
       user: { name: props.userName, color: '#f783ac' },
     }),
+    Underline,
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    TextStyle,
+    Color,
+    Highlight.configure({ multicolor: true }),
+    Link.configure({ openOnClick: false }),
+    TaskList,
+    TaskItem.configure({ nested: true }),
+    FontFamily,
+    FontSize,
+    LineHeight,
+    Image,
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableHeader,
+    TableCell,
   ],
+})
+
+// Once Yjs has synced, an empty shared doc still starts with `isEmpty === true`,
+// and stays true until either this client or a remote peer types something —
+// so the chips correctly stay hidden for late joiners of a doc that already has content.
+const isEditorEmpty = ref(true)
+watch(editor, (instance) => {
+  if (!instance) return
+  isEditorEmpty.value = instance.isEmpty
+  instance.on('update', () => {
+    isEditorEmpty.value = instance.isEmpty
+  })
 })
 
 onBeforeUnmount(() => {
@@ -71,8 +125,20 @@ function getCursorPosition() {
 }
 
 defineExpose({ getSnapshotBase64, restoreFromSnapshotBase64, getCursorPosition })
+
+const zoom = ref(1)
 </script>
 
 <template>
-  <EditorContent :editor="editor" class="max-w-none" />
+  <EditorToolbar
+    v-if="editor"
+    :editor="editor"
+    :undo-manager="undoManager"
+    @insert-comment="emit('insert-comment')"
+    @zoom="zoom = $event"
+  />
+  <div :style="{ zoom }">
+    <QuickStartChips v-if="editor && isEditorEmpty" :editor="editor" />
+    <EditorContent :editor="editor" class="max-w-none" />
+  </div>
 </template>
