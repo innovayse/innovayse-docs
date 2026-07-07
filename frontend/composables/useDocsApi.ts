@@ -13,6 +13,9 @@ export function useDocsApi() {
     listDocuments: () => authedFetch('/documents'),
     createDocument: (title: string) =>
       authedFetch('/documents', { method: 'POST', body: { title } }),
+    getDocument: (documentId: string) => authedFetch(`/documents/${documentId}`),
+    renameDocument: (documentId: string, title: string) =>
+      authedFetch(`/documents/${documentId}`, { method: 'PATCH', body: { title } }),
     inviteUser: (documentId: string, userId: string, role: string) =>
       authedFetch(`/documents/${documentId}/share/invite`, {
         method: 'POST',
