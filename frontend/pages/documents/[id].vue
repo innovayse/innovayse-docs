@@ -119,7 +119,7 @@ async function handleRestoreVersion(versionId: string) {
     </div>
 
     <div class="mx-auto flex w-full max-w-6xl flex-1 items-stretch gap-6 px-6 py-8">
-      <section v-if="documentReady" class="glass-panel min-w-0 flex-1 rounded-[var(--radius-card)] px-10 py-8">
+      <section v-if="documentReady" class="glass-panel min-w-0 flex-1 rounded-[var(--radius-card)] py-8">
         <ClientOnly>
           <CollaborativeEditor
             v-if="accessToken"

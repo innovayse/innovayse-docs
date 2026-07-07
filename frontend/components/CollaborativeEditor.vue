@@ -127,6 +127,8 @@ function getCursorPosition() {
 defineExpose({ getSnapshotBase64, restoreFromSnapshotBase64, getCursorPosition })
 
 const zoom = ref(1)
+const pageMarginLeft = ref(48)
+const pageMarginRight = ref(48)
 </script>
 
 <template>
@@ -137,8 +139,13 @@ const zoom = ref(1)
     @insert-comment="emit('insert-comment')"
     @zoom="zoom = $event"
   />
-  <div :style="{ zoom }">
-    <QuickStartChips v-if="editor && isEditorEmpty" :editor="editor" />
-    <EditorContent :editor="editor" class="max-w-none" />
+  <div class="px-10">
+    <DocumentRuler v-model:margin-left="pageMarginLeft" v-model:margin-right="pageMarginRight" />
+  </div>
+  <div :style="{ zoom }" class="px-10 pb-8 pt-6">
+    <div :style="{ paddingLeft: `${pageMarginLeft}px`, paddingRight: `${pageMarginRight}px` }">
+      <QuickStartChips v-if="editor && isEditorEmpty" :editor="editor" />
+      <EditorContent :editor="editor" class="max-w-none" />
+    </div>
   </div>
 </template>
