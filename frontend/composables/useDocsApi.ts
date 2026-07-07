@@ -16,6 +16,8 @@ export function useDocsApi() {
     getDocument: (documentId: string) => authedFetch(`/documents/${documentId}`),
     renameDocument: (documentId: string, title: string) =>
       authedFetch(`/documents/${documentId}`, { method: 'PATCH', body: { title } }),
+    deleteDocument: (documentId: string) =>
+      authedFetch(`/documents/${documentId}`, { method: 'DELETE' }),
     inviteUser: (documentId: string, userId: string, role: string) =>
       authedFetch(`/documents/${documentId}/share/invite`, {
         method: 'POST',

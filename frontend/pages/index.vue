@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { user, login, logout, loadUser } = useAuth()
-const { listDocuments, createDocument } = useDocsApi()
+const { listDocuments, createDocument, deleteDocument } = useDocsApi()
 
 interface DocSummary {
   id: string
@@ -11,6 +11,15 @@ interface DocSummary {
 const documents = ref<DocSummary[]>([])
 const loadingDocuments = ref(false)
 const creating = ref(false)
+const searchQuery = ref('')
+const deletingId = ref<string | null>(null)
+const openMenuId = ref<string | null>(null)
+
+const filteredDocuments = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return documents.value
+  return documents.value.filter((doc) => doc.title.toLowerCase().includes(query))
+})
 
 async function refreshDocuments() {
   loadingDocuments.value = true
@@ -31,6 +40,20 @@ async function createBlankDocument() {
   }
 }
 
+async function removeDocument(doc: DocSummary) {
+  openMenuId.value = null
+  if (!confirm(`Delete "${doc.title}"? This cannot be undone.`)) return
+  deletingId.value = doc.id
+  try {
+    await deleteDocument(doc.id)
+    documents.value = documents.value.filter((d) => d.id !== doc.id)
+  } catch {
+    alert('Could not delete this document — only the owner can delete it.')
+  } finally {
+    deletingId.value = null
+  }
+}
+
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 }
@@ -48,6 +71,15 @@ onMounted(async () => {
         <div class="flex items-center gap-3">
           <img src="/logo.png" alt="Innovayse" class="h-7 w-7 rounded-lg" />
           <span class="text-sm font-semibold text-[var(--text-heading)]">Documents</span>
+        </div>
+        <div class="hidden max-w-xs flex-1 sm:block">
+          <input
+            v-model="searchQuery"
+            type="search"
+            placeholder="Search documents"
+            class="w-full rounded-[var(--radius-input)] border-0 bg-[var(--input-bg)] px-3 py-1.5 text-sm text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-start)]"
+            style="border: var(--input-border)"
+          />
         </div>
         <div class="flex items-center gap-3">
           <span class="hidden text-xs text-[var(--text-subtitle)] sm:inline">{{ user.profile.email }}</span>
@@ -81,21 +113,46 @@ onMounted(async () => {
         <p v-else-if="!documents.length" class="text-sm text-[var(--text-muted)]">
           No documents yet — create one above to get started.
         </p>
+        <p v-else-if="!filteredDocuments.length" class="text-sm text-[var(--text-muted)]">
+          No documents match "{{ searchQuery }}".
+        </p>
         <div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-          <NuxtLink
-            v-for="doc in documents"
+          <div
+            v-for="doc in filteredDocuments"
             :key="doc.id"
-            :to="`/documents/${doc.id}`"
-            class="glass-panel group flex flex-col overflow-hidden rounded-[var(--radius-panel)] transition hover:ring-2 hover:ring-[var(--accent-start)]"
+            class="glass-panel group relative flex flex-col overflow-hidden rounded-[var(--radius-panel)] transition hover:ring-2 hover:ring-[var(--accent-start)]"
+            :class="{ 'opacity-40': deletingId === doc.id }"
           >
-            <div class="flex h-28 items-center justify-center border-b border-white/10 bg-white/[0.02]">
-              <span class="text-2xl">📄</span>
+            <NuxtLink :to="`/documents/${doc.id}`" class="flex flex-col">
+              <div class="flex h-28 items-center justify-center border-b border-white/10 bg-white/[0.02]">
+                <span class="text-2xl">📄</span>
+              </div>
+              <div class="px-3 py-2">
+                <p class="truncate pr-5 text-sm font-medium text-[var(--text-heading)]">{{ doc.title }}</p>
+                <p class="text-xs text-[var(--text-muted)]">{{ formatDate(doc.updatedAt) }}</p>
+              </div>
+            </NuxtLink>
+
+            <button
+              class="absolute right-1.5 top-1.5 rounded-full p-1 text-[var(--text-subtitle)] opacity-0 transition hover:bg-black/40 hover:text-[var(--text-heading)] group-hover:opacity-100"
+              aria-label="Document options"
+              @click.prevent.stop="openMenuId = openMenuId === doc.id ? null : doc.id"
+            >
+              ⋮
+            </button>
+            <div
+              v-if="openMenuId === doc.id"
+              class="glass-panel absolute right-1.5 top-8 z-10 min-w-[8rem] rounded-[var(--radius-input)] p-1"
+              @click.stop
+            >
+              <button
+                class="w-full rounded-md px-2 py-1.5 text-left text-xs text-red-400 hover:bg-red-500/10"
+                @click.prevent="removeDocument(doc)"
+              >
+                Delete
+              </button>
             </div>
-            <div class="px-3 py-2">
-              <p class="truncate text-sm font-medium text-[var(--text-heading)]">{{ doc.title }}</p>
-              <p class="text-xs text-[var(--text-muted)]">{{ formatDate(doc.updatedAt) }}</p>
-            </div>
-          </NuxtLink>
+          </div>
         </div>
       </div>
     </template>
