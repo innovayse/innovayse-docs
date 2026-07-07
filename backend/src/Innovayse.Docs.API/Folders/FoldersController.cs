@@ -52,4 +52,16 @@ public class FoldersController : ControllerBase
         var folder = await _folderRepository.GetByIdAsync(id);
         return folder is null ? NotFound() : Ok(folder);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var folder = await _folderRepository.GetByIdAsync(id);
+        if (folder is null) return NotFound();
+
+        if (folder.OwnerId != CallerId) return Forbid();
+
+        await _folderRepository.DeleteAsync(id);
+        return NoContent();
+    }
 }

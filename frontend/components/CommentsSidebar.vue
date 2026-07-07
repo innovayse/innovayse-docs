@@ -1,10 +1,12 @@
 <script setup lang="ts">
-const props = defineProps<{ documentId: string }>()
+const props = defineProps<{ documentId: string; getAnchorPosition?: () => number }>()
 const { listComments, createComment } = useDocsApi()
 
-const comments = ref<Array<{ id: string; text: string; authorId: string }>>([])
+const comments = ref<Array<{ id: string; text: string; authorId: string; anchorPosition: number }>>([])
 const newCommentText = ref('')
 const posting = ref(false)
+
+const sortedComments = computed(() => [...comments.value].sort((a, b) => a.anchorPosition - b.anchorPosition))
 
 async function refresh() {
   comments.value = (await listComments(props.documentId)) as typeof comments.value
@@ -14,7 +16,8 @@ async function submit() {
   if (!newCommentText.value.trim()) return
   posting.value = true
   try {
-    await createComment(props.documentId, newCommentText.value, 0)
+    const anchorPosition = props.getAnchorPosition?.() ?? 0
+    await createComment(props.documentId, newCommentText.value, anchorPosition)
     newCommentText.value = ''
     await refresh()
   } finally {
@@ -31,7 +34,7 @@ onMounted(refresh)
 
     <ul class="flex-1 space-y-2 overflow-y-auto">
       <li
-        v-for="comment in comments"
+        v-for="comment in sortedComments"
         :key="comment.id"
         class="rounded-[var(--radius-input)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-body)]"
       >

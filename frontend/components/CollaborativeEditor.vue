@@ -64,7 +64,13 @@ function restoreFromSnapshotBase64(snapshotBase64: string) {
   editor.value?.commands.setContent(json)
 }
 
-defineExpose({ getSnapshotBase64, restoreFromSnapshotBase64 })
+/** The caret/selection start position, for anchoring a new comment to where
+ * the user is actually looking rather than always the top of the document. */
+function getCursorPosition() {
+  return editor.value?.state.selection.from ?? 0
+}
+
+defineExpose({ getSnapshotBase64, restoreFromSnapshotBase64, getCursorPosition })
 </script>
 
 <template>

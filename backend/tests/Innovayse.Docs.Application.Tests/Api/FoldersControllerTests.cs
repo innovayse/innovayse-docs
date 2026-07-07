@@ -40,4 +40,35 @@ public class FoldersControllerTests
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Same(folders, ok.Value);
     }
+
+    [Fact]
+    public async Task Delete_Owner_DeletesFolder()
+    {
+        var callerId = Guid.NewGuid();
+        var folder = new Folder { Id = Guid.NewGuid(), Name = "Mine", OwnerId = callerId };
+        var folderRepo = new Mock<IFolderRepository>();
+        folderRepo.Setup(r => r.GetByIdAsync(folder.Id)).ReturnsAsync(folder);
+        var controller = new FoldersController(folderRepo.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.Delete(folder.Id);
+
+        Assert.IsType<NoContentResult>(result);
+        folderRepo.Verify(r => r.DeleteAsync(folder.Id), Times.Once);
+    }
+
+    [Fact]
+    public async Task Delete_NotOwner_ReturnsForbid()
+    {
+        var folder = new Folder { Id = Guid.NewGuid(), Name = "Mine", OwnerId = Guid.NewGuid() };
+        var folderRepo = new Mock<IFolderRepository>();
+        folderRepo.Setup(r => r.GetByIdAsync(folder.Id)).ReturnsAsync(folder);
+        var controller = new FoldersController(folderRepo.Object);
+        controller.SetCallerIdForTesting(Guid.NewGuid());
+
+        var result = await controller.Delete(folder.Id);
+
+        Assert.IsType<ForbidResult>(result);
+        folderRepo.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
+    }
 }

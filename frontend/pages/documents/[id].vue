@@ -10,7 +10,11 @@ const shareOpen = ref(false)
 const versionHistoryOpen = ref(false)
 const title = ref('')
 const savingTitle = ref(false)
-const editorRef = ref<{ getSnapshotBase64: () => string; restoreFromSnapshotBase64: (b64: string) => void } | null>(null)
+const editorRef = ref<{
+  getSnapshotBase64: () => string
+  restoreFromSnapshotBase64: (b64: string) => void
+  getCursorPosition: () => number
+} | null>(null)
 
 onMounted(async () => {
   const doc = (await getDocument(documentId)) as { title: string }
@@ -94,7 +98,10 @@ async function handleRestoreVersion(versionId: string) {
       </section>
 
       <aside class="hidden w-80 shrink-0 lg:block">
-        <CommentsSidebar :document-id="route.params.id as string" />
+        <CommentsSidebar
+          :document-id="route.params.id as string"
+          :get-anchor-position="() => editorRef?.getCursorPosition() ?? 0"
+        />
       </aside>
     </div>
 

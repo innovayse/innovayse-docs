@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { user, login, logout, loadUser } = useAuth()
-const { listDocuments, createDocument, deleteDocument, moveDocument, listFolders, createFolder } = useDocsApi()
+const { listDocuments, createDocument, deleteDocument, moveDocument, listFolders, createFolder, deleteFolder } = useDocsApi()
 
 interface DocSummary {
   id: string
@@ -66,6 +66,14 @@ async function addFolder() {
   } finally {
     creatingFolder.value = false
   }
+}
+
+async function removeFolder(folder: FolderSummary) {
+  if (!confirm(`Delete folder "${folder.name}"? Documents inside it will move back to "All documents".`)) return
+  await deleteFolder(folder.id)
+  folders.value = folders.value.filter((f) => f.id !== folder.id)
+  documents.value = documents.value.map((d) => (d.folderId === folder.id ? { ...d, folderId: null } : d))
+  if (activeFolderId.value === folder.id) activeFolderId.value = null
 }
 
 async function removeDocument(doc: DocSummary) {
@@ -157,17 +165,25 @@ onMounted(async () => {
           >
             All documents
           </button>
-          <button
+          <div
             v-for="folder in folders"
             :key="folder.id"
-            class="rounded-full px-3 py-1.5 text-xs font-medium transition"
+            class="group flex items-center rounded-full text-xs font-medium transition"
             :class="activeFolderId === folder.id
               ? 'accent-gradient text-white'
               : 'border border-white/10 text-[var(--text-subtitle)] hover:bg-white/5'"
-            @click="activeFolderId = folder.id"
           >
-            <Icon name="folder" class="mr-1 inline h-3.5 w-3.5 align-[-2px]" /> {{ folder.name }}
-          </button>
+            <button class="py-1.5 pl-3 pr-1.5" @click="activeFolderId = folder.id">
+              <Icon name="folder" class="mr-1 inline h-3.5 w-3.5 align-[-2px]" /> {{ folder.name }}
+            </button>
+            <button
+              class="rounded-full p-1 pr-2.5 opacity-0 transition hover:text-red-400 group-hover:opacity-100"
+              aria-label="Delete folder"
+              @click="removeFolder(folder)"
+            >
+              <Icon name="x-mark" class="h-3 w-3" />
+            </button>
+          </div>
           <button
             class="inline-flex items-center gap-1 rounded-full border border-dashed border-white/15 px-3 py-1.5 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 disabled:opacity-50"
             :disabled="creatingFolder"

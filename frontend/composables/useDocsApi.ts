@@ -23,6 +23,8 @@ export function useDocsApi() {
     listFolders: () => authedFetch('/folders'),
     createFolder: (name: string) =>
       authedFetch('/folders', { method: 'POST', body: { name } }),
+    deleteFolder: (folderId: string) =>
+      authedFetch(`/folders/${folderId}`, { method: 'DELETE' }),
     inviteUser: (documentId: string, userId: string, role: string) =>
       authedFetch(`/documents/${documentId}/share/invite`, {
         method: 'POST',
