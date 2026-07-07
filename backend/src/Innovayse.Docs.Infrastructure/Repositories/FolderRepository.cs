@@ -30,6 +30,10 @@ public class FolderRepository : IFolderRepository
         var documentsInFolder = await _context.Documents.Where(d => d.FolderId == id).ToListAsync();
         foreach (var document in documentsInFolder) document.FolderId = null;
 
+        // Subfolders move up a level rather than being orphaned or cascade-deleted.
+        var subfolders = await _context.Folders.Where(f => f.ParentFolderId == id).ToListAsync();
+        foreach (var subfolder in subfolders) subfolder.ParentFolderId = folder.ParentFolderId;
+
         _context.Folders.Remove(folder);
         await _context.SaveChangesAsync();
     }

@@ -12,6 +12,7 @@ interface DocSummary {
 interface FolderSummary {
   id: string
   name: string
+  parentFolderId: string | null
 }
 
 const documents = ref<DocSummary[]>([])
@@ -22,9 +23,24 @@ const creatingFolder = ref(false)
 const searchQuery = ref('')
 const deletingId = ref<string | null>(null)
 const openMenuId = ref<string | null>(null)
-const activeFolderId = ref<string | null>(null)
+const currentFolderId = ref<string | null>(null)
 
-const documentsInFolder = computed(() => documents.value.filter((doc) => doc.folderId === activeFolderId.value))
+const subfolders = computed(() => folders.value.filter((f) => f.parentFolderId === currentFolderId.value))
+
+/** Home → … → current folder, for breadcrumb navigation. */
+const breadcrumb = computed(() => {
+  const chain: FolderSummary[] = []
+  let cursor = currentFolderId.value
+  while (cursor) {
+    const folder = folders.value.find((f) => f.id === cursor)
+    if (!folder) break
+    chain.unshift(folder)
+    cursor = folder.parentFolderId
+  }
+  return chain
+})
+
+const documentsInFolder = computed(() => documents.value.filter((doc) => doc.folderId === currentFolderId.value))
 
 const filteredDocuments = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
@@ -49,7 +65,7 @@ async function createBlankDocument() {
   creating.value = true
   try {
     const doc = (await createDocument('Untitled document')) as DocSummary
-    if (activeFolderId.value) await moveDocument(doc.id, activeFolderId.value)
+    if (currentFolderId.value) await moveDocument(doc.id, currentFolderId.value)
     await navigateTo(`/documents/${doc.id}`)
   } finally {
     creating.value = false
@@ -61,7 +77,7 @@ async function addFolder() {
   if (!name) return
   creatingFolder.value = true
   try {
-    const folder = (await createFolder(name)) as FolderSummary
+    const folder = (await createFolder(name, currentFolderId.value)) as FolderSummary
     folders.value.push(folder)
   } finally {
     creatingFolder.value = false
@@ -69,11 +85,13 @@ async function addFolder() {
 }
 
 async function removeFolder(folder: FolderSummary) {
-  if (!confirm(`Delete folder "${folder.name}"? Documents inside it will move back to "All documents".`)) return
+  if (!confirm(`Delete folder "${folder.name}"? Documents inside it will move up a level, subfolders too.`)) return
   await deleteFolder(folder.id)
-  folders.value = folders.value.filter((f) => f.id !== folder.id)
-  documents.value = documents.value.map((d) => (d.folderId === folder.id ? { ...d, folderId: null } : d))
-  if (activeFolderId.value === folder.id) activeFolderId.value = null
+  folders.value = folders.value
+    .filter((f) => f.id !== folder.id)
+    .map((f) => (f.parentFolderId === folder.id ? { ...f, parentFolderId: folder.parentFolderId } : f))
+  documents.value = documents.value.map((d) => (d.folderId === folder.id ? { ...d, folderId: folder.parentFolderId } : d))
+  if (currentFolderId.value === folder.id) currentFolderId.value = folder.parentFolderId
 }
 
 async function removeDocument(doc: DocSummary) {
@@ -154,38 +172,28 @@ onMounted(async () => {
           </span>
         </button>
 
-        <h2 class="mb-4 mt-10 text-sm font-semibold text-[var(--text-subtitle)]">Folders</h2>
-        <div class="mb-8 flex flex-wrap items-center gap-2">
-          <button
-            class="rounded-full px-3 py-1.5 text-xs font-medium transition"
-            :class="activeFolderId === null
-              ? 'accent-gradient text-white'
-              : 'border border-white/10 text-[var(--text-subtitle)] hover:bg-white/5'"
-            @click="activeFolderId = null"
-          >
-            All documents
-          </button>
-          <div
-            v-for="folder in folders"
-            :key="folder.id"
-            class="group flex items-center rounded-full text-xs font-medium transition"
-            :class="activeFolderId === folder.id
-              ? 'accent-gradient text-white'
-              : 'border border-white/10 text-[var(--text-subtitle)] hover:bg-white/5'"
-          >
-            <button class="py-1.5 pl-3 pr-1.5" @click="activeFolderId = folder.id">
-              <Icon name="folder" class="mr-1 inline h-3.5 w-3.5 align-[-2px]" /> {{ folder.name }}
-            </button>
+        <div class="mb-4 mt-10 flex items-center justify-between">
+          <nav class="flex flex-wrap items-center gap-1 text-sm">
             <button
-              class="rounded-full p-1 pr-2.5 opacity-0 transition hover:text-red-400 group-hover:opacity-100"
-              aria-label="Delete folder"
-              @click="removeFolder(folder)"
+              class="rounded px-1.5 py-0.5 font-medium transition"
+              :class="currentFolderId === null ? 'text-[var(--text-heading)]' : 'text-[var(--text-subtitle)] hover:text-[var(--text-heading)]'"
+              @click="currentFolderId = null"
             >
-              <Icon name="x-mark" class="h-3 w-3" />
+              Home
             </button>
-          </div>
+            <template v-for="crumb in breadcrumb" :key="crumb.id">
+              <span class="text-[var(--text-muted)]">/</span>
+              <button
+                class="rounded px-1.5 py-0.5 font-medium transition"
+                :class="currentFolderId === crumb.id ? 'text-[var(--text-heading)]' : 'text-[var(--text-subtitle)] hover:text-[var(--text-heading)]'"
+                @click="currentFolderId = crumb.id"
+              >
+                {{ crumb.name }}
+              </button>
+            </template>
+          </nav>
           <button
-            class="inline-flex items-center gap-1 rounded-full border border-dashed border-white/15 px-3 py-1.5 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 disabled:opacity-50"
+            class="inline-flex shrink-0 items-center gap-1 rounded-full border border-dashed border-white/15 px-3 py-1.5 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 disabled:opacity-50"
             :disabled="creatingFolder"
             @click="addFolder"
           >
@@ -193,18 +201,30 @@ onMounted(async () => {
           </button>
         </div>
 
-        <h2 class="mb-4 text-sm font-semibold text-[var(--text-subtitle)]">
-          {{ activeFolderId ? folders.find((f) => f.id === activeFolderId)?.name : 'Recent documents' }}
-        </h2>
-
         <p v-if="loadingDocuments" class="text-sm text-[var(--text-muted)]">Loading…</p>
-        <p v-else-if="!documentsInFolder.length" class="text-sm text-[var(--text-muted)]">
-          No documents here yet — create one above to get started.
+        <p v-else-if="!subfolders.length && !documentsInFolder.length" class="text-sm text-[var(--text-muted)]">
+          Empty — create a document or folder above to get started.
         </p>
-        <p v-else-if="!filteredDocuments.length" class="text-sm text-[var(--text-muted)]">
+        <p v-else-if="searchQuery && !filteredDocuments.length" class="text-sm text-[var(--text-muted)]">
           No documents match "{{ searchQuery }}".
         </p>
         <div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+          <div
+            v-for="folder in subfolders"
+            :key="folder.id"
+            class="glass-panel group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-panel)] py-6 transition hover:ring-2 hover:ring-[var(--accent-start)]"
+            @click="currentFolderId = folder.id"
+          >
+            <Icon name="folder" class="h-8 w-8 text-[var(--text-muted)]" />
+            <p class="max-w-[90%] truncate text-sm font-medium text-[var(--text-heading)]">{{ folder.name }}</p>
+            <button
+              class="absolute right-1.5 top-1.5 rounded-full p-1 text-[var(--text-subtitle)] opacity-0 transition hover:bg-black/40 hover:text-red-400 group-hover:opacity-100"
+              aria-label="Delete folder"
+              @click.stop="removeFolder(folder)"
+            >
+              <Icon name="x-mark" class="h-3.5 w-3.5" />
+            </button>
+          </div>
           <div
             v-for="doc in filteredDocuments"
             :key="doc.id"

@@ -21,8 +21,8 @@ export function useDocsApi() {
     moveDocument: (documentId: string, folderId: string | null) =>
       authedFetch(`/documents/${documentId}/folder`, { method: 'PATCH', body: { folderId } }),
     listFolders: () => authedFetch('/folders'),
-    createFolder: (name: string) =>
-      authedFetch('/folders', { method: 'POST', body: { name } }),
+    createFolder: (name: string, parentFolderId: string | null) =>
+      authedFetch('/folders', { method: 'POST', body: { name, parentFolderId } }),
     deleteFolder: (folderId: string) =>
       authedFetch(`/folders/${folderId}`, { method: 'DELETE' }),
     inviteUser: (documentId: string, userId: string, role: string) =>
