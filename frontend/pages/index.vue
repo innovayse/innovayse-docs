@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const route = useRoute()
+const router = useRouter()
 const { user, login, logout, loadUser } = useAuth()
 const { listDocuments, createDocument, deleteDocument, moveDocument, listFolders, createFolder, deleteFolder } = useDocsApi()
 
@@ -23,7 +25,15 @@ const creatingFolder = ref(false)
 const searchQuery = ref('')
 const deletingId = ref<string | null>(null)
 const openMenuId = ref<string | null>(null)
-const currentFolderId = ref<string | null>(null)
+const newFolderDialogOpen = ref(false)
+
+/** The current folder lives in the URL (`?folder=<id>`), not local state — so a refresh, a
+ * bookmark, or a shared link lands back in the same folder instead of always resetting to Home. */
+const currentFolderId = computed(() => (route.query.folder as string | undefined) ?? null)
+
+function goToFolder(folderId: string | null) {
+  router.push({ query: folderId ? { folder: folderId } : {} })
+}
 
 const subfolders = computed(() => folders.value.filter((f) => f.parentFolderId === currentFolderId.value))
 
@@ -72,9 +82,8 @@ async function createBlankDocument() {
   }
 }
 
-async function addFolder() {
-  const name = prompt('Folder name')?.trim()
-  if (!name) return
+async function addFolder(name: string) {
+  newFolderDialogOpen.value = false
   creatingFolder.value = true
   try {
     const folder = (await createFolder(name, currentFolderId.value)) as FolderSummary
@@ -91,7 +100,7 @@ async function removeFolder(folder: FolderSummary) {
     .filter((f) => f.id !== folder.id)
     .map((f) => (f.parentFolderId === folder.id ? { ...f, parentFolderId: folder.parentFolderId } : f))
   documents.value = documents.value.map((d) => (d.folderId === folder.id ? { ...d, folderId: folder.parentFolderId } : d))
-  if (currentFolderId.value === folder.id) currentFolderId.value = folder.parentFolderId
+  if (currentFolderId.value === folder.id) goToFolder(folder.parentFolderId)
 }
 
 async function removeDocument(doc: DocSummary) {
@@ -177,7 +186,7 @@ onMounted(async () => {
             <button
               class="rounded px-1.5 py-0.5 font-medium transition"
               :class="currentFolderId === null ? 'text-[var(--text-heading)]' : 'text-[var(--text-subtitle)] hover:text-[var(--text-heading)]'"
-              @click="currentFolderId = null"
+              @click="goToFolder(null)"
             >
               Home
             </button>
@@ -186,7 +195,7 @@ onMounted(async () => {
               <button
                 class="rounded px-1.5 py-0.5 font-medium transition"
                 :class="currentFolderId === crumb.id ? 'text-[var(--text-heading)]' : 'text-[var(--text-subtitle)] hover:text-[var(--text-heading)]'"
-                @click="currentFolderId = crumb.id"
+                @click="goToFolder(crumb.id)"
               >
                 {{ crumb.name }}
               </button>
@@ -195,7 +204,7 @@ onMounted(async () => {
           <button
             class="inline-flex shrink-0 items-center gap-1 rounded-full border border-dashed border-white/15 px-3 py-1.5 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 disabled:opacity-50"
             :disabled="creatingFolder"
-            @click="addFolder"
+            @click="newFolderDialogOpen = true"
           >
             <Icon name="plus" class="h-3.5 w-3.5" /> New folder
           </button>
@@ -213,7 +222,7 @@ onMounted(async () => {
             v-for="folder in subfolders"
             :key="folder.id"
             class="glass-panel group relative flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-panel)] py-6 transition hover:ring-2 hover:ring-[var(--accent-start)]"
-            @click="currentFolderId = folder.id"
+            @click="goToFolder(folder.id)"
           >
             <Icon name="folder" class="h-8 w-8 text-[var(--text-muted)]" />
             <p class="max-w-[90%] truncate text-sm font-medium text-[var(--text-heading)]">{{ folder.name }}</p>
@@ -301,5 +310,13 @@ onMounted(async () => {
         </button>
       </div>
     </div>
+
+    <PromptDialog
+      :open="newFolderDialogOpen"
+      title="New folder"
+      placeholder="Folder name"
+      @confirm="addFolder"
+      @close="newFolderDialogOpen = false"
+    />
   </main>
 </template>
