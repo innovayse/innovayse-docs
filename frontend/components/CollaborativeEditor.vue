@@ -146,7 +146,12 @@ const pageMarginRight = ref(48)
 // run — more reliable than guessing which DOM element to ResizeObserver for these two
 // already-known, already-reactive triggers (window resize is comparatively rare and left
 // to the pagination extension's own ResizeObserver).
-watch([zoom, pageMarginLeft, pageMarginRight], () => {
+watch([zoom, pageMarginLeft, pageMarginRight], async () => {
+  // Wait for Vue to actually patch the DOM with the new zoom/padding style values first —
+  // dispatching immediately (Vue's default pre-flush timing) fires before the browser has
+  // applied the new layout, so the pagination plugin's later remeasure still sees the old
+  // dimensions.
+  await nextTick()
   const view = editor.value?.view
   if (view) view.dispatch(view.state.tr)
 })
