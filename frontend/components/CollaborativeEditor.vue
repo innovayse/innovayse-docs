@@ -23,6 +23,7 @@ import * as Y from 'yjs'
 import { yDocToProsemirrorJSON, ySyncPluginKey } from 'y-prosemirror'
 import { FontSize } from '~/composables/useFontSize'
 import { LineHeight } from '~/composables/useLineHeight'
+import { Pagination } from '~/composables/usePagination'
 
 const props = defineProps<{ documentId: string; accessToken: string; userName: string }>()
 const emit = defineEmits<{ 'insert-comment': [] }>()
@@ -43,6 +44,14 @@ const provider = new HocuspocusProvider({
 const undoManager = new Y.UndoManager(ydoc.getXmlFragment('default'), {
   trackedOrigins: new Set([ySyncPluginKey]),
 })
+
+// A4 at 96 CSS px/in: 210mm × 297mm ≈ 794 × 1123px — a fixed page size, like a real
+// document, rather than stretching to fill whatever width the surrounding panel has.
+const PAGE_WIDTH = 794
+const PAGE_MIN_HEIGHT = 1123
+// Usable content height per page for pagination: page height minus the page-surface's
+// own py-12 top+bottom padding (96px) minus a 32px reserved footer strip.
+const PAGE_CONTENT_HEIGHT = PAGE_MIN_HEIGHT - 96 - 32
 
 const editor = useEditor({
   extensions: [
@@ -68,6 +77,7 @@ const editor = useEditor({
     TableRow,
     TableHeader,
     TableCell,
+    Pagination.configure({ pageContentHeight: PAGE_CONTENT_HEIGHT }),
   ],
 })
 
@@ -129,11 +139,6 @@ defineExpose({ getSnapshotBase64, restoreFromSnapshotBase64, getCursorPosition }
 const zoom = ref(1)
 const pageMarginLeft = ref(48)
 const pageMarginRight = ref(48)
-
-// A4 at 96 CSS px/in: 210mm × 297mm ≈ 794 × 1123px — a fixed page size, like a real
-// document, rather than stretching to fill whatever width the surrounding panel has.
-const PAGE_WIDTH = 794
-const PAGE_MIN_HEIGHT = 1123
 </script>
 
 <template>
@@ -153,7 +158,6 @@ const PAGE_MIN_HEIGHT = 1123
       :style="{
         zoom,
         width: `${PAGE_WIDTH}px`,
-        minHeight: `${PAGE_MIN_HEIGHT}px`,
         paddingLeft: `${pageMarginLeft}px`,
         paddingRight: `${pageMarginRight}px`,
       }"
