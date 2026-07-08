@@ -137,20 +137,19 @@ export const Pagination = Extension.create<PaginationOptions>({
 
           scheduleRecalculate()
 
-          // Zoom changes, ruler margin drags, and window resizes all change the box size
-          // of the .page-surface ancestor — observing it covers all three cases without
-          // needing separate listeners.
-          const surface = (editorView.dom as HTMLElement).closest('.page-surface')
-          const resizeObserver = surface
-            ? new ResizeObserver(() => scheduleRecalculate())
-            : undefined
-          if (surface && resizeObserver) resizeObserver.observe(surface)
+          // Zoom changes, ruler margin drags, and window resizes all change the rendered
+          // width/height of the editor's own DOM — observing editorView.dom directly (rather
+          // than looking up the .page-surface ancestor) means this doesn't depend on that
+          // ancestor already being attached to the document at plugin-view-creation time;
+          // editorView.dom is always a valid, live element by the time view() runs.
+          const resizeObserver = new ResizeObserver(() => scheduleRecalculate())
+          resizeObserver.observe(editorView.dom as HTMLElement)
 
           return {
             update: scheduleRecalculate,
             destroy() {
               if (timer) clearTimeout(timer)
-              resizeObserver?.disconnect()
+              resizeObserver.disconnect()
             },
           }
         },
