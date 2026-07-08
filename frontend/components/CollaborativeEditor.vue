@@ -139,6 +139,17 @@ defineExpose({ getSnapshotBase64, restoreFromSnapshotBase64, getCursorPosition }
 const zoom = ref(1)
 const pageMarginLeft = ref(48)
 const pageMarginRight = ref(48)
+
+// Zoom and margin changes reflow content height without ever dispatching a document
+// transaction, so the pagination plugin's own update()-triggered recompute never fires
+// for them on its own. Dispatching a no-op transaction forces that same update() hook to
+// run — more reliable than guessing which DOM element to ResizeObserver for these two
+// already-known, already-reactive triggers (window resize is comparatively rare and left
+// to the pagination extension's own ResizeObserver).
+watch([zoom, pageMarginLeft, pageMarginRight], () => {
+  const view = editor.value?.view
+  if (view) view.dispatch(view.state.tr)
+})
 </script>
 
 <template>
