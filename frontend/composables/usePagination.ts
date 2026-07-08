@@ -19,7 +19,7 @@ const paginationPluginKey = new PluginKey<PaginationState>('pagination')
  * where a page break should fall — always between nodes, never inside one. A node
  * taller than a full page is allowed to overflow the page it starts on (not split),
  * and forces the *next* node onto a fresh page. */
-function computeBreaks(view: EditorView, pageContentHeight: number): number[] {
+function computeBreaks(view: EditorView, pageContentHeight: number, scale = 1): number[] {
   const breaks: number[] = []
   let used = 0
   let forceBreakNext = false
@@ -30,7 +30,7 @@ function computeBreaks(view: EditorView, pageContentHeight: number): number[] {
 
     const rect = dom.getBoundingClientRect()
     const style = window.getComputedStyle(dom)
-    const height = rect.height + parseFloat(style.marginTop || '0') + parseFloat(style.marginBottom || '0')
+    const height = (rect.height + parseFloat(style.marginTop || '0') + parseFloat(style.marginBottom || '0')) / scale
 
     if (forceBreakNext || (used > 0 && used + height > pageContentHeight)) {
       breaks.push(offset)
@@ -45,6 +45,17 @@ function computeBreaks(view: EditorView, pageContentHeight: number): number[] {
   })
 
   return breaks
+}
+
+/** CSS `zoom` scales rendered geometry, so getBoundingClientRect() measurements come back
+ * already scaled. Walk up from the ProseMirror DOM element to find the `.page-surface`
+ * ancestor carrying the reactive `zoom` style and read its computed zoom factor, so
+ * measurements can be normalized back to logical (zoom=1) pixels. */
+function getZoomFactor(dom: HTMLElement): number {
+  const surface = dom.closest('.page-surface') as HTMLElement | null
+  if (!surface) return 1
+  const zoom = parseFloat(window.getComputedStyle(surface).zoom)
+  return Number.isFinite(zoom) && zoom > 0 ? zoom : 1
 }
 
 function breaksEqual(a: number[], b: number[]): boolean {
@@ -111,7 +122,8 @@ export const Pagination = Extension.create<PaginationOptions>({
           let timer: ReturnType<typeof setTimeout> | undefined
 
           const recalculate = () => {
-            const breaks = computeBreaks(editorView, pageContentHeight)
+            const scale = getZoomFactor(editorView.dom as HTMLElement)
+            const breaks = computeBreaks(editorView, pageContentHeight, scale)
             const current = paginationPluginKey.getState(editorView.state)?.breaks ?? []
             if (breaksEqual(breaks, current)) return
             editorView.dispatch(editorView.state.tr.setMeta(paginationPluginKey, { breaks }))
@@ -125,10 +137,20 @@ export const Pagination = Extension.create<PaginationOptions>({
 
           scheduleRecalculate()
 
+          // Zoom changes, ruler margin drags, and window resizes all change the box size
+          // of the .page-surface ancestor — observing it covers all three cases without
+          // needing separate listeners.
+          const surface = (editorView.dom as HTMLElement).closest('.page-surface')
+          const resizeObserver = surface
+            ? new ResizeObserver(() => scheduleRecalculate())
+            : undefined
+          if (surface && resizeObserver) resizeObserver.observe(surface)
+
           return {
             update: scheduleRecalculate,
             destroy() {
               if (timer) clearTimeout(timer)
+              resizeObserver?.disconnect()
             },
           }
         },
