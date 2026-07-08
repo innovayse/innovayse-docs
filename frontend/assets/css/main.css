@@ -57,12 +57,36 @@ body {
   box-shadow: var(--card-shadow);
 }
 
-/* The document itself, as a fixed-size A4 sheet sitting inside the surrounding
-   glass panel — a shade lighter than the panel behind it so its edges read as a
-   distinct page rather than blending into the panel's own background. */
+/* The document itself, as a stack of fixed-size A4 sheets sitting inside the surrounding
+   glass panel. The repeating gradient paints a subtle shadow band at the top/bottom of
+   every 1123px (one page height) so page boundaries line up with the real, content-aware
+   break positions the pagination extension computes — see composables/usePagination.ts.
+   This is a single flat container (ProseMirror requires one continuous content tree), so
+   the "separate sheets" look is a background illusion, not literally separate DOM boxes. */
 .page-surface {
-  background: rgba(255, 255, 255, 0.03);
+  background-color: rgba(255, 255, 255, 0.03);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.25) 0px,
+    transparent 12px,
+    transparent 1111px,
+    rgba(0, 0, 0, 0.25) 1123px
+  );
+  background-size: 100% 1123px;
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.page-break-footer {
+  margin-top: 1.5rem;
+  padding-bottom: 0.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.page-break-gap {
+  height: 2rem;
 }
 
 .accent-gradient {
