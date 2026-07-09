@@ -31,20 +31,26 @@ public class DocumentsControllerTests
     }
 
     [Fact]
-    public async Task List_ReturnsDocumentsForCaller()
+    public async Task List_ReturnsDocumentsWithCallerRoleForEach()
     {
         var callerId = Guid.NewGuid();
-        var documents = new List<Document> { new() { Id = Guid.NewGuid(), Title = "Mine", OwnerId = callerId } };
+        var ownedDoc = new Document { Id = Guid.NewGuid(), Title = "Mine", OwnerId = callerId };
+        var sharedDoc = new Document { Id = Guid.NewGuid(), Title = "Shared with me", OwnerId = Guid.NewGuid() };
         var docRepo = new Mock<IDocumentRepository>();
-        docRepo.Setup(r => r.ListForUserAsync(callerId)).ReturnsAsync(documents);
+        docRepo.Setup(r => r.ListForUserAsync(callerId)).ReturnsAsync([ownedDoc, sharedDoc]);
         var permService = new Mock<IPermissionService>();
+        permService.Setup(p => p.GetEffectiveRoleAsync(ownedDoc.Id, callerId)).ReturnsAsync(DocumentRole.Owner);
+        permService.Setup(p => p.GetEffectiveRoleAsync(sharedDoc.Id, callerId)).ReturnsAsync(DocumentRole.Viewer);
         var controller = new DocumentsController(docRepo.Object, permService.Object);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.List();
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
-        Assert.Same(documents, ok.Value);
+        var body = Assert.IsType<List<DocumentsController.DocumentWithRoleResponse>>(ok.Value);
+        Assert.Equal(2, body.Count);
+        Assert.Equal(DocumentRole.Owner, body.Single(d => d.Id == ownedDoc.Id).Role);
+        Assert.Equal(DocumentRole.Viewer, body.Single(d => d.Id == sharedDoc.Id).Role);
     }
 
     [Fact]

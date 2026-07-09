@@ -9,6 +9,15 @@ interface DocSummary {
   title: string
   updatedAt: string
   folderId: string | null
+  role: string
+}
+
+function canMove(doc: DocSummary) {
+  return doc.role === 'Editor' || doc.role === 'Owner'
+}
+
+function canDelete(doc: DocSummary) {
+  return doc.role === 'Owner'
 }
 
 interface FolderSummary {
@@ -251,6 +260,7 @@ onMounted(async () => {
             </NuxtLink>
 
             <button
+              v-if="canMove(doc) || canDelete(doc)"
               class="absolute right-1.5 top-1.5 rounded-full p-1 text-[var(--text-subtitle)] opacity-0 transition hover:bg-black/40 hover:text-[var(--text-heading)] group-hover:opacity-100"
               aria-label="Document options"
               @click.prevent.stop="openMenuId = openMenuId === doc.id ? null : doc.id"
@@ -262,26 +272,29 @@ onMounted(async () => {
               class="glass-panel absolute right-1.5 top-8 z-10 min-w-[10rem] rounded-[var(--radius-input)] p-1"
               @click.stop
             >
-              <p class="px-2 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Move to
-              </p>
+              <template v-if="canMove(doc)">
+                <p class="px-2 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                  Move to
+                </p>
+                <button
+                  v-if="doc.folderId !== null"
+                  class="w-full rounded-md px-2 py-1.5 text-left text-xs text-[var(--text-body)] hover:bg-white/5"
+                  @click.prevent="moveToFolder(doc, null)"
+                >
+                  No folder
+                </button>
+                <button
+                  v-for="folder in folders.filter((f) => f.id !== doc.folderId)"
+                  :key="folder.id"
+                  class="w-full rounded-md px-2 py-1.5 text-left text-xs text-[var(--text-body)] hover:bg-white/5"
+                  @click.prevent="moveToFolder(doc, folder.id)"
+                >
+                  <Icon name="folder" class="mr-1 inline h-3.5 w-3.5 align-[-2px]" /> {{ folder.name }}
+                </button>
+              </template>
+              <div v-if="canMove(doc) && canDelete(doc)" class="my-1 h-px bg-white/10" />
               <button
-                v-if="doc.folderId !== null"
-                class="w-full rounded-md px-2 py-1.5 text-left text-xs text-[var(--text-body)] hover:bg-white/5"
-                @click.prevent="moveToFolder(doc, null)"
-              >
-                No folder
-              </button>
-              <button
-                v-for="folder in folders.filter((f) => f.id !== doc.folderId)"
-                :key="folder.id"
-                class="w-full rounded-md px-2 py-1.5 text-left text-xs text-[var(--text-body)] hover:bg-white/5"
-                @click.prevent="moveToFolder(doc, folder.id)"
-              >
-                <Icon name="folder" class="mr-1 inline h-3.5 w-3.5 align-[-2px]" /> {{ folder.name }}
-              </button>
-              <div class="my-1 h-px bg-white/10" />
-              <button
+                v-if="canDelete(doc)"
                 class="w-full rounded-md px-2 py-1.5 text-left text-xs text-red-400 hover:bg-red-500/10"
                 @click.prevent="removeDocument(doc)"
               >
