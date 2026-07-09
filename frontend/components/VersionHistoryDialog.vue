@@ -2,6 +2,7 @@
 const props = defineProps<{
   documentId: string
   open: boolean
+  canEdit: boolean
   onSaveVersion: (label: string | undefined) => Promise<void>
   onRestoreVersion: (versionId: string) => Promise<void>
 }>()
@@ -76,7 +77,7 @@ watch(() => props.open, (isOpen) => {
           </button>
         </div>
 
-        <div class="mb-4 flex gap-2">
+        <div v-if="canEdit" class="mb-4 flex gap-2">
           <input
             v-model="labelInput"
             placeholder="Label (optional)"
@@ -91,6 +92,9 @@ watch(() => props.open, (isOpen) => {
             {{ saving ? 'Saving…' : 'Save version' }}
           </button>
         </div>
+        <p v-else class="mb-4 text-xs text-[var(--text-muted)]">
+          Viewing only — you don't have permission to save or restore versions.
+        </p>
 
         <div class="flex-1 space-y-2 overflow-y-auto">
           <p v-if="loading" class="text-sm text-[var(--text-muted)]">Loading…</p>
@@ -109,6 +113,7 @@ watch(() => props.open, (isOpen) => {
               <p class="text-xs text-[var(--text-muted)]">{{ formatDate(version.createdAt) }}</p>
             </div>
             <button
+              v-if="canEdit"
               class="shrink-0 rounded-[var(--radius-input)] border border-white/10 px-2.5 py-1 text-xs font-medium text-[var(--text-body)] transition hover:bg-white/5 disabled:opacity-50"
               :disabled="restoringId === version.id"
               @click="restore(version)"

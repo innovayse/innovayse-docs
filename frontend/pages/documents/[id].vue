@@ -168,6 +168,7 @@ async function handleRestoreVersion(versionId: string) {
     <VersionHistoryDialog
       :document-id="documentId"
       :open="versionHistoryOpen"
+      :can-edit="canEdit"
       :on-save-version="handleSaveVersion"
       :on-restore-version="handleRestoreVersion"
       @close="versionHistoryOpen = false"
