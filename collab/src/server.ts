@@ -17,7 +17,9 @@ const server = new Server({
     // connection — the return value is only merged into hookPayload.context.
     // Write permission is controlled via data.connectionConfig.readOnly,
     // which must be mutated directly here.
-    data.connectionConfig.readOnly = result.role === 'Viewer'
+    // Commenter is comment-only, not document-body-edit — it must be read-only here
+    // too, same as Viewer. Only Editor/Owner may write to the shared Y.Doc.
+    data.connectionConfig.readOnly = result.role === 'Viewer' || result.role === 'Commenter'
     // token is stored in the returned context so onChange can use it to
     // authenticate persistence calls back to the Docs API.
     return { role: result.role, token: data.token }

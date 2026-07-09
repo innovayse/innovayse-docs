@@ -48,20 +48,40 @@ public class DocumentsControllerTests
     }
 
     [Fact]
-    public async Task Get_UserWithoutViewerRole_ReturnsForbid()
+    public async Task Get_UserWithNoRole_ReturnsForbid()
     {
         var document = new Document { Id = Guid.NewGuid(), OwnerId = Guid.NewGuid() };
+        var callerId = Guid.NewGuid();
         var docRepo = new Mock<IDocumentRepository>();
         docRepo.Setup(r => r.GetByIdAsync(document.Id)).ReturnsAsync(document);
         var permService = new Mock<IPermissionService>();
-        permService.Setup(p => p.AuthorizeAsync(document.Id, It.IsAny<Guid>(), DocumentRole.Viewer))
-            .ReturnsAsync(false);
+        permService.Setup(p => p.GetEffectiveRoleAsync(document.Id, callerId)).ReturnsAsync((DocumentRole?)null);
         var controller = new DocumentsController(docRepo.Object, permService.Object);
-        controller.SetCallerIdForTesting(Guid.NewGuid());
+        controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.Get(document.Id);
 
         Assert.IsType<ForbidResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task Get_UserWithRole_ReturnsDocumentWithRole()
+    {
+        var document = new Document { Id = Guid.NewGuid(), OwnerId = Guid.NewGuid(), Title = "Shared Doc" };
+        var callerId = Guid.NewGuid();
+        var docRepo = new Mock<IDocumentRepository>();
+        docRepo.Setup(r => r.GetByIdAsync(document.Id)).ReturnsAsync(document);
+        var permService = new Mock<IPermissionService>();
+        permService.Setup(p => p.GetEffectiveRoleAsync(document.Id, callerId)).ReturnsAsync(DocumentRole.Commenter);
+        var controller = new DocumentsController(docRepo.Object, permService.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.Get(document.Id);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var body = Assert.IsType<DocumentsController.DocumentWithRoleResponse>(ok.Value);
+        Assert.Equal("Shared Doc", body.Title);
+        Assert.Equal(DocumentRole.Commenter, body.Role);
     }
 
     [Fact]

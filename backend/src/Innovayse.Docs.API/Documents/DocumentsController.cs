@@ -52,16 +52,35 @@ public class DocumentsController : ControllerBase
     public async Task<ActionResult<List<Document>>> List() =>
         Ok(await _documentRepository.ListForUserAsync(CallerId));
 
+    /// <summary>Adds the caller's effective role to the document — the frontend uses this
+    /// to decide whether the editor should be editable and whether to show formatting
+    /// controls (Viewer/Commenter must not be able to write to the document body).</summary>
+    public record DocumentWithRoleResponse(
+        Guid Id,
+        string Title,
+        Guid? FolderId,
+        Guid OwnerId,
+        DateTimeOffset CreatedAt,
+        DateTimeOffset UpdatedAt,
+        DocumentRole Role);
+
     [HttpGet("{id}")]
-    public async Task<ActionResult<Document>> Get(Guid id)
+    public async Task<ActionResult<DocumentWithRoleResponse>> Get(Guid id)
     {
         var document = await _documentRepository.GetByIdAsync(id);
         if (document is null) return NotFound();
 
-        if (!await _permissionService.AuthorizeAsync(id, CallerId, DocumentRole.Viewer))
-            return Forbid();
+        var role = await _permissionService.GetEffectiveRoleAsync(id, CallerId);
+        if (role is null) return Forbid();
 
-        return Ok(document);
+        return Ok(new DocumentWithRoleResponse(
+            document.Id,
+            document.Title,
+            document.FolderId,
+            document.OwnerId,
+            document.CreatedAt,
+            document.UpdatedAt,
+            role.Value));
     }
 
     [HttpPatch("{id}")]

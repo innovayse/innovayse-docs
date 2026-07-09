@@ -26,7 +26,7 @@ import { LineHeight } from '~/composables/useLineHeight'
 import { Indent } from '~/composables/useIndent'
 import { Pagination } from '~/composables/usePagination'
 
-const props = defineProps<{ documentId: string; accessToken: string; userName: string }>()
+const props = defineProps<{ documentId: string; accessToken: string; userName: string; canEdit: boolean }>()
 const emit = defineEmits<{ 'insert-comment': [] }>()
 
 const ydoc = new Y.Doc()
@@ -55,6 +55,11 @@ const PAGE_MIN_HEIGHT = 1123
 const PAGE_CONTENT_HEIGHT = PAGE_MIN_HEIGHT - 96 - 32
 
 const editor = useEditor({
+  // Client-side UX guard, matching the Hocuspocus server's connectionConfig.readOnly for
+  // Viewer/Commenter — that server-side check is what actually rejects a non-editor's
+  // writes, but without this too, typing would visibly "work" locally and only silently
+  // revert after the next sync/reload, which is a confusing experience.
+  editable: props.canEdit,
   extensions: [
     StarterKit.configure({ history: false }), // Yjs owns undo history
     Collaboration.configure({ document: ydoc }),
@@ -161,12 +166,15 @@ watch([zoom, pageMarginLeft, pageMarginRight], async () => {
 
 <template>
   <EditorToolbar
-    v-if="editor"
+    v-if="editor && canEdit"
     :editor="editor"
     :undo-manager="undoManager"
     @insert-comment="emit('insert-comment')"
     @zoom="zoom = $event"
   />
+  <p v-if="editor && !canEdit" class="px-4 pt-3 text-xs text-[var(--text-muted)]">
+    Viewing only — you don't have permission to edit this document.
+  </p>
   <div class="mx-auto" :style="{ width: `${PAGE_WIDTH}px`, maxWidth: '100%' }">
     <DocumentRuler v-model:margin-left="pageMarginLeft" v-model:margin-right="pageMarginRight" />
   </div>

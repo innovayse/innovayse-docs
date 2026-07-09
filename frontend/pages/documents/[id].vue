@@ -13,6 +13,8 @@ const title = ref('')
 const savingTitle = ref(false)
 const documentReady = ref(false)
 const shareLinkError = ref('')
+const role = ref<string | null>(null)
+const canEdit = computed(() => role.value === 'Editor' || role.value === 'Owner')
 const editorRef = ref<{
   getSnapshotBase64: () => string
   restoreFromSnapshotBase64: (b64: string) => void
@@ -47,15 +49,17 @@ onMounted(async () => {
     await router.replace({ query: {} })
   }
 
-  // Only mount the editor/comments children once any share-link redemption has been
-  // attempted — otherwise CommentsSidebar's own onMounted (which fires before this
-  // parent onMounted, per Vue's child-before-parent mount order) can fetch comments
-  // before the redeemed permission actually exists, causing a transient 403 on a
-  // visitor's very first click-through from a share link.
-  documentReady.value = true
-
-  const doc = (await getDocument(documentId)) as { title: string }
+  const doc = (await getDocument(documentId)) as { title: string; role: string }
   title.value = doc.title
+  role.value = doc.role
+
+  // Only mount the editor/comments children once any share-link redemption has been
+  // attempted AND the caller's role is known — otherwise CommentsSidebar's own onMounted
+  // (which fires before this parent onMounted, per Vue's child-before-parent mount order)
+  // can fetch comments before the redeemed permission actually exists (a transient 403 on
+  // a visitor's very first click-through from a share link), and CollaborativeEditor would
+  // briefly mount as editable before role is known.
+  documentReady.value = true
 })
 
 async function saveTitle() {
@@ -96,7 +100,8 @@ async function handleRestoreVersion(versionId: string) {
         <input
           v-model="title"
           placeholder="Untitled document"
-          class="min-w-0 max-w-xs rounded-[var(--radius-input)] border-0 bg-transparent px-2 py-1 text-sm font-semibold text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:bg-[var(--input-bg)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-start)]"
+          :readonly="!canEdit"
+          class="min-w-0 max-w-xs rounded-[var(--radius-input)] border-0 bg-transparent px-2 py-1 text-sm font-semibold text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:bg-[var(--input-bg)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-start)] read-only:cursor-default"
           @keyup.enter="($event.target as HTMLInputElement).blur()"
           @blur="saveTitle"
         />
@@ -115,6 +120,7 @@ async function handleRestoreVersion(versionId: string) {
           History
         </button>
         <button
+          v-if="role === 'Owner'"
           class="accent-gradient rounded-[var(--radius-input)] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-sky-500/20 transition hover:brightness-110"
           @click="shareOpen = true"
         >
@@ -139,6 +145,7 @@ async function handleRestoreVersion(versionId: string) {
             :document-id="route.params.id as string"
             :access-token="accessToken"
             :user-name="user?.profile.name ?? 'Anonymous'"
+            :can-edit="canEdit"
             @insert-comment="commentsSidebarRef?.focusNewComment()"
           />
         </ClientOnly>
