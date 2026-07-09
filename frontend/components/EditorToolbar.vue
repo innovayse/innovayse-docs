@@ -104,6 +104,21 @@ function clearFormatting() {
   props.editor.chain().focus().unsetAllMarks().clearNodes().run()
 }
 
+// Inside a list, indent/outdent moves the item between list levels (sink/lift). Outside a
+// list, sinkListItem/liftListItem simply have nothing to act on and silently no-op — so for
+// plain paragraphs/headings, fall back to the margin-based indent from useIndent.ts instead.
+function increaseIndent() {
+  const chain = props.editor.chain().focus()
+  if (props.editor.isActive('listItem')) chain.sinkListItem('listItem').run()
+  else (chain as any).increaseIndent().run()
+}
+
+function decreaseIndent() {
+  const chain = props.editor.chain().focus()
+  if (props.editor.isActive('listItem')) chain.liftListItem('listItem').run()
+  else (chain as any).decreaseIndent().run()
+}
+
 function printDocument() {
   window.print()
 }
@@ -322,7 +337,7 @@ function applyZoom(event: Event) {
       type="button"
       title="Decrease indent"
       class="toolbar-btn"
-      @click="editor.chain().focus().liftListItem('listItem').run()"
+      @click="decreaseIndent"
     >
       <Icon name="indent-decrease" class="h-4 w-4" />
     </button>
@@ -330,7 +345,7 @@ function applyZoom(event: Event) {
       type="button"
       title="Increase indent"
       class="toolbar-btn"
-      @click="editor.chain().focus().sinkListItem('listItem').run()"
+      @click="increaseIndent"
     >
       <Icon name="indent-increase" class="h-4 w-4" />
     </button>

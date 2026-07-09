@@ -23,6 +23,7 @@ import * as Y from 'yjs'
 import { yDocToProsemirrorJSON, ySyncPluginKey } from 'y-prosemirror'
 import { FontSize } from '~/composables/useFontSize'
 import { LineHeight } from '~/composables/useLineHeight'
+import { Indent } from '~/composables/useIndent'
 import { Pagination } from '~/composables/usePagination'
 
 const props = defineProps<{ documentId: string; accessToken: string; userName: string }>()
@@ -72,6 +73,7 @@ const editor = useEditor({
     FontFamily,
     FontSize,
     LineHeight,
+    Indent,
     Image,
     Table.configure({ resizable: true }),
     TableRow,
