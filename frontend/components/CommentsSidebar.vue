@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{ documentId: string; getAnchorPosition?: () => number }>()
+const props = defineProps<{ documentId: string; getAnchorPosition?: () => number; canComment: boolean }>()
 const { listComments, createComment } = useDocsApi()
 
 const comments = ref<Array<{ id: string; text: string; authorId: string; anchorPosition: number }>>([])
@@ -50,7 +50,7 @@ defineExpose({ focusNewComment })
       <li v-if="!comments.length" class="text-xs text-[var(--text-muted)]">No comments yet.</li>
     </ul>
 
-    <div class="mt-3 space-y-2 border-t border-white/10 pt-3">
+    <div v-if="canComment" class="mt-3 space-y-2 border-t border-white/10 pt-3">
       <textarea
         ref="textareaRef"
         v-model="newCommentText"
@@ -67,5 +67,8 @@ defineExpose({ focusNewComment })
         {{ posting ? 'Posting…' : 'Comment' }}
       </button>
     </div>
+    <p v-else class="mt-3 border-t border-white/10 pt-3 text-xs text-[var(--text-muted)]">
+      Viewing only — you don't have permission to comment on this document.
+    </p>
   </aside>
 </template>

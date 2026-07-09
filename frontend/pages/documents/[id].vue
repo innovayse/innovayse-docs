@@ -156,6 +156,7 @@ async function handleRestoreVersion(versionId: string) {
           ref="commentsSidebarRef"
           :document-id="route.params.id as string"
           :get-anchor-position="() => editorRef?.getCursorPosition() ?? 0"
+          :can-comment="role !== 'Viewer'"
         />
       </aside>
     </div>
