@@ -3,7 +3,7 @@
 const route = useRoute()
 const router = useRouter()
 const documentId = route.params.id as string
-const { accessToken, user, loadUser } = useAuth()
+const { accessToken, user, loadUser, login } = useAuth()
 const { getDocument, renameDocument, createVersion, restoreVersion, listVersions, redeemShareLink } = useDocsApi()
 await loadUser()
 
@@ -21,6 +21,16 @@ const editorRef = ref<{
 const commentsSidebarRef = ref<{ focusNewComment: () => void } | null>(null)
 
 onMounted(async () => {
+  // A genuinely cold tab (no local session — e.g. a share link opened fresh, not via
+  // in-app navigation from an already-authenticated tab) has no accessToken yet. Calling
+  // getDocument() anyway would just 401 and leave the page stuck on a bare header forever.
+  // Redirect to login instead, preserving this exact URL (including any ?share= token) so
+  // the visitor lands back here — not on the home page — once signed in.
+  if (!user.value) {
+    await login(route.fullPath)
+    return
+  }
+
   const shareToken = route.query.share as string | undefined
   if (shareToken) {
     try {

@@ -53,9 +53,13 @@ export function useAuth() {
     user.value = await getUserManager().getUser()
   }
 
-  async function login(): Promise<void> {
+  /** @param returnTo Path to send the user back to after sign-in (e.g. the document URL they
+   * landed on cold, with no local session) — round-tripped through OIDC's `state` and read
+   * back in pages/auth/callback.vue. Without this, a signed-out visitor always lands on the
+   * home page after logging in, losing whatever page (or share link) they actually wanted. */
+  async function login(returnTo?: string): Promise<void> {
     if (!import.meta.client) return
-    await getUserManager().signinRedirect()
+    await getUserManager().signinRedirect(returnTo ? { state: { returnTo } } : undefined)
   }
 
   async function logout(): Promise<void> {
@@ -64,10 +68,13 @@ export function useAuth() {
     user.value = null
   }
 
-  /** Completes the authorization code flow on the /auth/callback page. */
-  async function handleLoginCallback(): Promise<void> {
-    if (!import.meta.client) return
+  /** Completes the authorization code flow on the /auth/callback page. Returns the signed-in
+   * user (carrying the `returnTo` state login() attached, if any) so the callback page can
+   * navigate back to where the visitor actually came from instead of always the home page. */
+  async function handleLoginCallback(): Promise<User | undefined> {
+    if (!import.meta.client) return undefined
     user.value = await getUserManager().signinRedirectCallback()
+    return user.value
   }
 
   return {

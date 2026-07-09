@@ -5,8 +5,9 @@
 const { handleLoginCallback } = useAuth()
 
 onMounted(async () => {
-  await handleLoginCallback()
-  await navigateTo('/')
+  const signedInUser = await handleLoginCallback()
+  const returnTo = (signedInUser?.state as { returnTo?: string } | undefined)?.returnTo
+  await navigateTo(returnTo || '/')
 })
 </script>
 
