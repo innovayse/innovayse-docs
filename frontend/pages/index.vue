@@ -59,7 +59,18 @@ const breadcrumb = computed(() => {
   return chain
 })
 
-const documentsInFolder = computed(() => documents.value.filter((doc) => doc.folderId === currentFolderId.value))
+/** The folders API only ever returns folders the caller owns — it has no concept of
+ * folder-level sharing. So a document shared with someone and filed in the owner's folder
+ * would otherwise vanish for that person entirely: its folderId points at a folder they
+ * can't see or navigate into, and it isn't at folderId === null either. Treat any folderId
+ * the viewer doesn't have in their own folder list as "no folder" for display purposes, so
+ * a shared document always surfaces at Home rather than becoming unreachable. */
+function effectiveFolderId(doc: DocSummary): string | null {
+  if (doc.folderId === null) return null
+  return folders.value.some((f) => f.id === doc.folderId) ? doc.folderId : null
+}
+
+const documentsInFolder = computed(() => documents.value.filter((doc) => effectiveFolderId(doc) === currentFolderId.value))
 
 const filteredDocuments = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
