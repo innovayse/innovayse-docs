@@ -103,9 +103,11 @@ async function handleRestoreVersion(versionId: string) {
         <span v-if="savingTitle" class="text-xs text-[var(--text-muted)]">Saving…</span>
       </div>
       <div class="flex items-center gap-3">
-        <span v-if="user" class="hidden text-xs text-[var(--text-subtitle)] sm:inline">
-          {{ user.profile.email }}
-        </span>
+        <ClientOnly>
+          <span v-if="user" class="hidden text-xs text-[var(--text-subtitle)] sm:inline">
+            {{ user.profile.email }}
+          </span>
+        </ClientOnly>
         <button
           class="rounded-[var(--radius-input)] border border-white/10 px-3 py-2 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 hover:text-[var(--text-heading)]"
           @click="versionHistoryOpen = true"
