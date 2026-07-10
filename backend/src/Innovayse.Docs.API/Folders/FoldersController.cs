@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Innovayse.Docs.Application.Folders;
+using Innovayse.Docs.Application.Sharing;
 using Innovayse.Docs.Domain.Documents;
+using Innovayse.Docs.Domain.Sharing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,9 +14,14 @@ namespace Innovayse.Docs.API.Folders;
 public class FoldersController : ControllerBase
 {
     private readonly IFolderRepository _folderRepository;
+    private readonly IPermissionService _permissionService;
     private Guid? _callerIdOverride;
 
-    public FoldersController(IFolderRepository folderRepository) => _folderRepository = folderRepository;
+    public FoldersController(IFolderRepository folderRepository, IPermissionService permissionService)
+    {
+        _folderRepository = folderRepository;
+        _permissionService = permissionService;
+    }
 
     internal void SetCallerIdForTesting(Guid callerId) => _callerIdOverride = callerId;
 
@@ -27,6 +34,10 @@ public class FoldersController : ControllerBase
         public string Name { get; set; } = string.Empty;
         public Guid? ParentFolderId { get; set; }
     }
+
+    /// <summary>Adds the caller's effective role — the frontend uses this to decide whether
+    /// to show the Share button (Owner-only) and whether to badge the folder as shared.</summary>
+    public record FolderWithRoleResponse(Guid Id, string Name, Guid? ParentFolderId, Guid OwnerId, DocumentRole Role);
 
     [HttpPost]
     public async Task<ActionResult<Folder>> Create(CreateFolderRequest request)
@@ -43,14 +54,31 @@ public class FoldersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<Folder>>> List() =>
-        Ok(await _folderRepository.ListForUserAsync(CallerId));
+    public async Task<ActionResult<List<FolderWithRoleResponse>>> List()
+    {
+        var folders = await _folderRepository.ListForUserAsync(CallerId);
+        var result = new List<FolderWithRoleResponse>();
+        foreach (var folder in folders)
+        {
+            // ListForUserAsync only ever returns folders the caller owns or can reach through
+            // a folder share, so this should never actually be null — same defensive fallback
+            // pattern as DocumentsController.List.
+            var role = await _permissionService.GetEffectiveFolderRoleAsync(folder.Id, CallerId) ?? DocumentRole.Viewer;
+            result.Add(new FolderWithRoleResponse(folder.Id, folder.Name, folder.ParentFolderId, folder.OwnerId, role));
+        }
+        return Ok(result);
+    }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Folder>> Get(Guid id)
+    public async Task<ActionResult<FolderWithRoleResponse>> Get(Guid id)
     {
         var folder = await _folderRepository.GetByIdAsync(id);
-        return folder is null ? NotFound() : Ok(folder);
+        if (folder is null) return NotFound();
+
+        var role = await _permissionService.GetEffectiveFolderRoleAsync(id, CallerId);
+        if (role is null) return Forbid();
+
+        return Ok(new FolderWithRoleResponse(folder.Id, folder.Name, folder.ParentFolderId, folder.OwnerId, role.Value));
     }
 
     [HttpDelete("{id}")]

@@ -38,10 +38,14 @@ public class DocumentRepository : IDocumentRepository
             .Where(d => d.FolderId == folderId && d.OwnerId == ownerId)
             .ToListAsync();
 
-    public Task<List<Document>> ListForUserAsync(Guid userId) =>
-        _context.Documents
+    public async Task<List<Document>> ListForUserAsync(Guid userId)
+    {
+        var accessibleFolderIds = await FolderAccessHelper.GetAccessibleFolderIdsAsync(_context, userId);
+        return await _context.Documents
             .Where(d => d.OwnerId == userId ||
-                _context.DocumentPermissions.Any(p => p.DocumentId == d.Id && p.UserId == userId))
+                _context.DocumentPermissions.Any(p => p.DocumentId == d.Id && p.UserId == userId) ||
+                (d.FolderId != null && accessibleFolderIds.Contains(d.FolderId.Value)))
             .OrderByDescending(d => d.UpdatedAt)
             .ToListAsync();
+    }
 }

@@ -10,7 +10,8 @@ public interface IDocumentRepository
     Task DeleteAsync(Guid id);
     Task<List<Document>> ListByFolderAsync(Guid? folderId, Guid ownerId);
 
-    /// <summary>Documents the user owns or has been granted direct access to,
-    /// most recently updated first — powers the documents home screen.</summary>
+    /// <summary>Documents the user owns, has been granted direct access to, or that live inside
+    /// a folder (or nested subfolder) reachable from a folder shared with them — most recently
+    /// updated first. Powers the documents home screen.</summary>
     Task<List<Document>> ListForUserAsync(Guid userId);
 }

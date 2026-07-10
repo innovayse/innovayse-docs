@@ -19,8 +19,14 @@ public class FolderRepository : IFolderRepository
     public Task<Folder?> GetByIdAsync(Guid id) =>
         _context.Folders.FirstOrDefaultAsync(f => f.Id == id);
 
-    public Task<List<Folder>> ListForUserAsync(Guid ownerId) =>
-        _context.Folders.Where(f => f.OwnerId == ownerId).OrderBy(f => f.Name).ToListAsync();
+    public async Task<List<Folder>> ListForUserAsync(Guid userId)
+    {
+        var accessibleFolderIds = await FolderAccessHelper.GetAccessibleFolderIdsAsync(_context, userId);
+        return await _context.Folders
+            .Where(f => f.OwnerId == userId || accessibleFolderIds.Contains(f.Id))
+            .OrderBy(f => f.Name)
+            .ToListAsync();
+    }
 
     public async Task DeleteAsync(Guid id)
     {
