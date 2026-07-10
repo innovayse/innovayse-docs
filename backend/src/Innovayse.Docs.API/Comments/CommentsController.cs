@@ -66,4 +66,24 @@ public class CommentsController : ControllerBase
 
         return Ok(await _commentRepository.ListForDocumentAsync(documentId));
     }
+
+    public class UpdateCommentRequest
+    {
+        public bool Resolved { get; set; }
+    }
+
+    [HttpPatch("{commentId}")]
+    public async Task<IActionResult> Update(Guid documentId, Guid commentId, UpdateCommentRequest request)
+    {
+        if (!await _permissionService.AuthorizeAsync(documentId, CallerId, DocumentRole.Commenter))
+            return Forbid();
+
+        var comment = await _commentRepository.GetByIdAsync(commentId);
+        if (comment is null || comment.DocumentId != documentId)
+            return NotFound();
+
+        comment.Resolved = request.Resolved;
+        await _commentRepository.UpdateAsync(comment);
+        return NoContent();
+    }
 }

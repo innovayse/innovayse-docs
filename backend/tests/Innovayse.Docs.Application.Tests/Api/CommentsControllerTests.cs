@@ -85,4 +85,61 @@ public class CommentsControllerTests
         Assert.Equal("Ada Lovelace", created!.AuthorName);
         Assert.Equal(parentCommentId, created.ParentCommentId);
     }
+
+    [Fact]
+    public async Task Update_CommenterRole_TogglesResolved()
+    {
+        var documentId = Guid.NewGuid();
+        var callerId = Guid.NewGuid();
+        var comment = new Comment { Id = Guid.NewGuid(), DocumentId = documentId, Resolved = false };
+        var commentRepo = new Mock<ICommentRepository>();
+        commentRepo.Setup(r => r.GetByIdAsync(comment.Id)).ReturnsAsync(comment);
+        var permService = new Mock<IPermissionService>();
+        permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
+            .ReturnsAsync(true);
+        var controller = new CommentsController(commentRepo.Object, permService.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.Update(documentId, comment.Id, new CommentsController.UpdateCommentRequest { Resolved = true });
+
+        Assert.IsType<NoContentResult>(result);
+        commentRepo.Verify(r => r.UpdateAsync(It.Is<Comment>(c => c.Id == comment.Id && c.Resolved)), Times.Once);
+    }
+
+    [Fact]
+    public async Task Update_ViewerRole_ReturnsForbidWithoutTouchingComment()
+    {
+        var documentId = Guid.NewGuid();
+        var callerId = Guid.NewGuid();
+        var commentRepo = new Mock<ICommentRepository>();
+        var permService = new Mock<IPermissionService>();
+        permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
+            .ReturnsAsync(false);
+        var controller = new CommentsController(commentRepo.Object, permService.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.Update(documentId, Guid.NewGuid(), new CommentsController.UpdateCommentRequest { Resolved = true });
+
+        Assert.IsType<ForbidResult>(result);
+        commentRepo.Verify(r => r.GetByIdAsync(It.IsAny<Guid>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Update_CommentBelongsToDifferentDocument_ReturnsNotFound()
+    {
+        var documentId = Guid.NewGuid();
+        var callerId = Guid.NewGuid();
+        var comment = new Comment { Id = Guid.NewGuid(), DocumentId = Guid.NewGuid(), Resolved = false };
+        var commentRepo = new Mock<ICommentRepository>();
+        commentRepo.Setup(r => r.GetByIdAsync(comment.Id)).ReturnsAsync(comment);
+        var permService = new Mock<IPermissionService>();
+        permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
+            .ReturnsAsync(true);
+        var controller = new CommentsController(commentRepo.Object, permService.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.Update(documentId, comment.Id, new CommentsController.UpdateCommentRequest { Resolved = true });
+
+        Assert.IsType<NotFoundResult>(result);
+    }
 }

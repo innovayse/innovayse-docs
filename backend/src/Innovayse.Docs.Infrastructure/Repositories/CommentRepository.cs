@@ -18,4 +18,13 @@ public class CommentRepository : ICommentRepository
 
     public Task<List<Comment>> ListForDocumentAsync(Guid documentId) =>
         _context.Comments.Where(c => c.DocumentId == documentId).ToListAsync();
+
+    public Task<Comment?> GetByIdAsync(Guid id) =>
+        _context.Comments.FirstOrDefaultAsync(c => c.Id == id);
+
+    public async Task UpdateAsync(Comment comment)
+    {
+        _context.Comments.Update(comment);
+        await _context.SaveChangesAsync();
+    }
 }
