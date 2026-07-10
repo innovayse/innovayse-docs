@@ -328,7 +328,7 @@ onMounted(async () => {
         <p class="text-sm text-[var(--text-subtitle)]">Sign in with your Innovayse account to continue.</p>
         <button
           class="accent-gradient mt-6 w-full rounded-[var(--radius-input)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition hover:brightness-110"
-          @click="login"
+          @click="login()"
         >
           Log in
         </button>
