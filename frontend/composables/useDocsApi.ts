@@ -30,6 +30,11 @@ export function useDocsApi() {
         method: 'POST',
         body: { email, role },
       }),
+    inviteToFolder: (folderId: string, email: string, role: string) =>
+      authedFetch(`/folders/${folderId}/share/invite`, {
+        method: 'POST',
+        body: { email, role },
+      }),
     createShareLink: (documentId: string, role: string) =>
       authedFetch(`/documents/${documentId}/share/link`, {
         method: 'POST',

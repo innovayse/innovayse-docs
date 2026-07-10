@@ -1,7 +1,7 @@
 <script setup lang="ts">
-const props = defineProps<{ documentId: string; open: boolean }>()
+const props = defineProps<{ targetType: 'document' | 'folder'; targetId: string; open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
-const { inviteUser, createShareLink } = useDocsApi()
+const { inviteUser, inviteToFolder, createShareLink } = useDocsApi()
 
 const inviteEmail = ref('')
 const inviteRole = ref('Viewer')
@@ -14,7 +14,11 @@ async function sendInvite() {
   inviteError.value = ''
   inviting.value = true
   try {
-    await inviteUser(props.documentId, inviteEmail.value, inviteRole.value)
+    if (props.targetType === 'folder') {
+      await inviteToFolder(props.targetId, inviteEmail.value, inviteRole.value)
+    } else {
+      await inviteUser(props.targetId, inviteEmail.value, inviteRole.value)
+    }
     inviteEmail.value = ''
   } catch (err: any) {
     inviteError.value = err?.data?.message ?? 'Could not send invite.'
@@ -26,8 +30,8 @@ async function sendInvite() {
 async function generateLink() {
   generatingLink.value = true
   try {
-    const link = (await createShareLink(props.documentId, 'Viewer')) as { token: string }
-    linkUrl.value = `${window.location.origin}/documents/${props.documentId}?share=${link.token}`
+    const link = (await createShareLink(props.targetId, 'Viewer')) as { token: string }
+    linkUrl.value = `${window.location.origin}/documents/${props.targetId}?share=${link.token}`
   } finally {
     generatingLink.value = false
   }
@@ -39,7 +43,9 @@ async function generateLink() {
     <div v-if="open" class="fixed inset-0 z-20 flex items-center justify-center bg-black/60 px-4" @click.self="emit('close')">
       <div class="glass-panel w-full max-w-md rounded-[var(--radius-card)] p-6">
         <div class="mb-5 flex items-center justify-between">
-          <h2 class="text-base font-semibold text-[var(--text-heading)]">Share document</h2>
+          <h2 class="text-base font-semibold text-[var(--text-heading)]">
+            {{ targetType === 'folder' ? 'Share folder' : 'Share document' }}
+          </h2>
           <button
             class="rounded-full p-1 text-[var(--text-subtitle)] transition hover:bg-white/5 hover:text-[var(--text-heading)]"
             aria-label="Close"
@@ -79,26 +85,28 @@ async function generateLink() {
           <p v-if="inviteError" class="text-xs text-red-400">{{ inviteError }}</p>
         </div>
 
-        <div class="my-5 h-px bg-white/10" />
+        <template v-if="targetType === 'document'">
+          <div class="my-5 h-px bg-white/10" />
 
-        <div class="space-y-2">
-          <label class="text-xs font-medium text-[var(--text-subtitle)]">Share link</label>
-          <button
-            class="w-full rounded-[var(--radius-input)] border border-white/10 px-3 py-2 text-sm font-medium text-[var(--text-body)] transition hover:bg-white/5 disabled:opacity-50"
-            :disabled="generatingLink"
-            @click="generateLink"
-          >
-            {{ generatingLink ? 'Generating…' : 'Generate share link' }}
-          </button>
-          <input
-            v-if="linkUrl"
-            :value="linkUrl"
-            readonly
-            class="w-full rounded-[var(--radius-input)] border-0 bg-[var(--input-bg)] px-3 py-2 text-xs text-[var(--text-subtitle)] focus:outline-none"
-            style="border: var(--input-border)"
-            @focus="($event.target as HTMLInputElement).select()"
-          />
-        </div>
+          <div class="space-y-2">
+            <label class="text-xs font-medium text-[var(--text-subtitle)]">Share link</label>
+            <button
+              class="w-full rounded-[var(--radius-input)] border border-white/10 px-3 py-2 text-sm font-medium text-[var(--text-body)] transition hover:bg-white/5 disabled:opacity-50"
+              :disabled="generatingLink"
+              @click="generateLink"
+            >
+              {{ generatingLink ? 'Generating…' : 'Generate share link' }}
+            </button>
+            <input
+              v-if="linkUrl"
+              :value="linkUrl"
+              readonly
+              class="w-full rounded-[var(--radius-input)] border-0 bg-[var(--input-bg)] px-3 py-2 text-xs text-[var(--text-subtitle)] focus:outline-none"
+              style="border: var(--input-border)"
+              @focus="($event.target as HTMLInputElement).select()"
+            />
+          </div>
+        </template>
       </div>
     </div>
   </Teleport>

@@ -163,7 +163,8 @@ async function handleRestoreVersion(versionId: string) {
     </div>
 
     <ShareDialog
-      :document-id="route.params.id as string"
+      target-type="document"
+      :target-id="route.params.id as string"
       :open="shareOpen"
       @close="shareOpen = false"
     />

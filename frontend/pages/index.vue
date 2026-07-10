@@ -24,6 +24,7 @@ interface FolderSummary {
   id: string
   name: string
   parentFolderId: string | null
+  role: string
 }
 
 const documents = ref<DocSummary[]>([])
@@ -35,6 +36,7 @@ const searchQuery = ref('')
 const deletingId = ref<string | null>(null)
 const openMenuId = ref<string | null>(null)
 const newFolderDialogOpen = ref(false)
+const shareFolderTarget = ref<FolderSummary | null>(null)
 
 /** The current folder lives in the URL (`?folder=<id>`), not local state — so a refresh, a
  * bookmark, or a shared link lands back in the same folder instead of always resetting to Home. */
@@ -246,7 +248,22 @@ onMounted(async () => {
           >
             <Icon name="folder" class="h-8 w-8 text-[var(--text-muted)]" />
             <p class="max-w-[90%] truncate text-sm font-medium text-[var(--text-heading)]">{{ folder.name }}</p>
+            <span
+              v-if="folder.role !== 'Owner'"
+              class="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-[var(--text-muted)]"
+            >
+              Shared
+            </span>
             <button
+              v-if="folder.role === 'Owner'"
+              class="absolute right-8 top-1.5 rounded-full p-1 text-[var(--text-subtitle)] opacity-0 transition hover:bg-black/40 hover:text-[var(--text-heading)] group-hover:opacity-100"
+              aria-label="Share folder"
+              @click.stop="shareFolderTarget = folder"
+            >
+              <Icon name="link" class="h-3.5 w-3.5" />
+            </button>
+            <button
+              v-if="folder.role === 'Owner'"
               class="absolute right-1.5 top-1.5 rounded-full p-1 text-[var(--text-subtitle)] opacity-0 transition hover:bg-black/40 hover:text-red-400 group-hover:opacity-100"
               aria-label="Delete folder"
               @click.stop="removeFolder(folder)"
@@ -341,6 +358,13 @@ onMounted(async () => {
       placeholder="Folder name"
       @confirm="addFolder"
       @close="newFolderDialogOpen = false"
+    />
+    <ShareDialog
+      v-if="shareFolderTarget"
+      target-type="folder"
+      :target-id="shareFolderTarget.id"
+      :open="!!shareFolderTarget"
+      @close="shareFolderTarget = null"
     />
   </main>
 </template>
