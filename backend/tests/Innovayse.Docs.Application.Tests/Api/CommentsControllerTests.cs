@@ -55,4 +55,34 @@ public class CommentsControllerTests
 
         Assert.IsType<ForbidResult>(result.Result);
     }
+
+    [Fact]
+    public async Task Create_PersistsAuthorNameAndParentCommentId()
+    {
+        var documentId = Guid.NewGuid();
+        var callerId = Guid.NewGuid();
+        var parentCommentId = Guid.NewGuid();
+        var commentRepo = new Mock<ICommentRepository>();
+        Comment? created = null;
+        commentRepo.Setup(r => r.CreateAsync(It.IsAny<Comment>()))
+            .Callback<Comment>(c => created = c)
+            .Returns(Task.CompletedTask);
+        var permService = new Mock<IPermissionService>();
+        permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
+            .ReturnsAsync(true);
+        var controller = new CommentsController(commentRepo.Object, permService.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        await controller.Create(documentId, new CommentsController.CreateCommentRequest
+        {
+            Text = "Replying here",
+            AuthorName = "Ada Lovelace",
+            AnchorPosition = 10,
+            ParentCommentId = parentCommentId,
+        });
+
+        Assert.NotNull(created);
+        Assert.Equal("Ada Lovelace", created!.AuthorName);
+        Assert.Equal(parentCommentId, created.ParentCommentId);
+    }
 }

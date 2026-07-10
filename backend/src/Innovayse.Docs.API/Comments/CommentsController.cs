@@ -32,6 +32,7 @@ public class CommentsController : ControllerBase
     public class CreateCommentRequest
     {
         public string Text { get; set; } = string.Empty;
+        public string AuthorName { get; set; } = string.Empty;
         public int AnchorPosition { get; set; }
         public Guid? ParentCommentId { get; set; }
     }
@@ -48,6 +49,7 @@ public class CommentsController : ControllerBase
             DocumentId = documentId,
             AnchorPosition = request.AnchorPosition,
             AuthorId = CallerId,
+            AuthorName = request.AuthorName,
             Text = request.Text,
             ParentCommentId = request.ParentCommentId,
             CreatedAt = DateTimeOffset.UtcNow

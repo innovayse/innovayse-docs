@@ -6,6 +6,7 @@ public class Comment
     public Guid DocumentId { get; set; }
     public int AnchorPosition { get; set; }
     public Guid AuthorId { get; set; }
+    public string AuthorName { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
     public bool Resolved { get; set; }
     public Guid? ParentCommentId { get; set; }
