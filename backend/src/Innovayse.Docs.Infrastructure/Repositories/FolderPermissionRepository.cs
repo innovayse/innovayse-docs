@@ -22,4 +22,20 @@ public class FolderPermissionRepository : IFolderPermissionRepository
         _context.FolderPermissions.Add(permission);
         await _context.SaveChangesAsync();
     }
+
+    public async Task UpsertAsync(FolderPermission permission)
+    {
+        var existing = await _context.FolderPermissions
+            .FirstOrDefaultAsync(p => p.FolderId == permission.FolderId && p.UserId == permission.UserId);
+        if (existing is null)
+        {
+            _context.FolderPermissions.Add(permission);
+        }
+        else
+        {
+            existing.Role = permission.Role;
+            existing.GrantedBy = permission.GrantedBy;
+        }
+        await _context.SaveChangesAsync();
+    }
 }
