@@ -157,6 +157,7 @@ async function handleRestoreVersion(versionId: string) {
           :document-id="route.params.id as string"
           :get-anchor-position="() => editorRef?.getCursorPosition() ?? 0"
           :can-comment="role !== 'Viewer'"
+          :author-name="user?.profile.name ?? 'Anonymous'"
         />
       </aside>
     </div>
