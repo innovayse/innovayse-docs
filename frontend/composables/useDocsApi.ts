@@ -42,10 +42,21 @@ export function useDocsApi() {
       }),
     listComments: (documentId: string) =>
       authedFetch(`/documents/${documentId}/comments`),
-    createComment: (documentId: string, text: string, anchorPosition: number) =>
+    createComment: (
+      documentId: string,
+      text: string,
+      anchorPosition: number,
+      authorName: string,
+      parentCommentId?: string,
+    ) =>
       authedFetch(`/documents/${documentId}/comments`, {
         method: 'POST',
-        body: { text, anchorPosition },
+        body: { text, anchorPosition, authorName, parentCommentId },
+      }),
+    setCommentResolved: (documentId: string, commentId: string, resolved: boolean) =>
+      authedFetch(`/documents/${documentId}/comments/${commentId}`, {
+        method: 'PATCH',
+        body: { resolved },
       }),
     listVersions: (documentId: string) =>
       authedFetch(`/documents/${documentId}/versions`),
