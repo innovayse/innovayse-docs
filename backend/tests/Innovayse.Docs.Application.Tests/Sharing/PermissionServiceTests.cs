@@ -229,6 +229,34 @@ public class PermissionServiceTests
     }
 
     [Fact]
+    public async Task AuthorizeAsync_CyclicFolderChain_TerminatesWithoutHanging()
+    {
+        // Folder A's parent is Folder B, and Folder B's parent is Folder A (a genuine cycle).
+        // Neither folder grants the user a role, so the walk must terminate (via the
+        // MaxFolderChainDepth cap) and return false instead of looping forever.
+        var folderAId = Guid.NewGuid();
+        var folderBId = Guid.NewGuid();
+        var document = new Document { Id = Guid.NewGuid(), OwnerId = Guid.NewGuid(), FolderId = folderAId };
+        var userId = Guid.NewGuid();
+        var docRepo = new Mock<IDocumentRepository>();
+        docRepo.Setup(r => r.GetByIdAsync(document.Id)).ReturnsAsync(document);
+        var permRepo = new Mock<IPermissionRepository>();
+        permRepo.Setup(r => r.GetRoleAsync(document.Id, userId)).ReturnsAsync((DocumentRole?)null);
+        var folderPermRepo = new Mock<IFolderPermissionRepository>();
+        folderPermRepo.Setup(r => r.GetRoleAsync(folderAId, userId)).ReturnsAsync((DocumentRole?)null);
+        folderPermRepo.Setup(r => r.GetRoleAsync(folderBId, userId)).ReturnsAsync((DocumentRole?)null);
+        var folderRepo = new Mock<IFolderRepository>();
+        folderRepo.Setup(r => r.GetByIdAsync(folderAId))
+            .ReturnsAsync(new Folder { Id = folderAId, OwnerId = Guid.NewGuid(), ParentFolderId = folderBId });
+        folderRepo.Setup(r => r.GetByIdAsync(folderBId))
+            .ReturnsAsync(new Folder { Id = folderBId, OwnerId = Guid.NewGuid(), ParentFolderId = folderAId });
+
+        var sut = new PermissionService(docRepo.Object, permRepo.Object, folderPermRepo.Object, folderRepo.Object);
+
+        Assert.False(await sut.AuthorizeAsync(document.Id, userId, DocumentRole.Viewer));
+    }
+
+    [Fact]
     public async Task GetEffectiveFolderRoleAsync_Owner_ReturnsOwner()
     {
         var ownerId = Guid.NewGuid();
