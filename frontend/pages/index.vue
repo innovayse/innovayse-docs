@@ -178,6 +178,7 @@ onMounted(async () => {
           />
         </div>
         <div class="flex items-center gap-3">
+          <NotificationBell />
           <span class="hidden text-xs text-[var(--text-subtitle)] sm:inline">{{ user.profile.email }}</span>
           <button
             class="rounded-[var(--radius-input)] border border-white/10 px-3 py-1.5 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 hover:text-[var(--text-heading)]"
@@ -363,6 +364,7 @@ onMounted(async () => {
       v-if="shareFolderTarget"
       target-type="folder"
       :target-id="shareFolderTarget.id"
+      :inviter-name="user?.profile.name ?? 'Anonymous'"
       :open="!!shareFolderTarget"
       @close="shareFolderTarget = null"
     />

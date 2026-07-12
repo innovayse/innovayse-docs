@@ -113,6 +113,7 @@ async function handleRestoreVersion(versionId: string) {
             {{ user.profile.email }}
           </span>
         </ClientOnly>
+        <NotificationBell />
         <button
           class="rounded-[var(--radius-input)] border border-white/10 px-3 py-2 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 hover:text-[var(--text-heading)]"
           @click="versionHistoryOpen = true"
@@ -165,6 +166,7 @@ async function handleRestoreVersion(versionId: string) {
     <ShareDialog
       target-type="document"
       :target-id="route.params.id as string"
+      :inviter-name="user?.profile.name ?? 'Anonymous'"
       :open="shareOpen"
       @close="shareOpen = false"
     />

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{ targetType: 'document' | 'folder'; targetId: string; open: boolean }>()
+const props = defineProps<{ targetType: 'document' | 'folder'; targetId: string; inviterName: string; open: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 const { inviteUser, inviteToFolder, createShareLink } = useDocsApi()
 
@@ -15,9 +15,9 @@ async function sendInvite() {
   inviting.value = true
   try {
     if (props.targetType === 'folder') {
-      await inviteToFolder(props.targetId, inviteEmail.value, inviteRole.value)
+      await inviteToFolder(props.targetId, inviteEmail.value, inviteRole.value, props.inviterName)
     } else {
-      await inviteUser(props.targetId, inviteEmail.value, inviteRole.value)
+      await inviteUser(props.targetId, inviteEmail.value, inviteRole.value, props.inviterName)
     }
     inviteEmail.value = ''
   } catch (err: any) {

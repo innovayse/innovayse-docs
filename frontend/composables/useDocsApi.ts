@@ -25,16 +25,21 @@ export function useDocsApi() {
       authedFetch('/folders', { method: 'POST', body: { name, parentFolderId } }),
     deleteFolder: (folderId: string) =>
       authedFetch(`/folders/${folderId}`, { method: 'DELETE' }),
-    inviteUser: (documentId: string, email: string, role: string) =>
+    inviteUser: (documentId: string, email: string, role: string, inviterName: string) =>
       authedFetch(`/documents/${documentId}/share/invite`, {
         method: 'POST',
-        body: { email, role },
+        body: { email, role, inviterName },
       }),
-    inviteToFolder: (folderId: string, email: string, role: string) =>
+    inviteToFolder: (folderId: string, email: string, role: string, inviterName: string) =>
       authedFetch(`/folders/${folderId}/share/invite`, {
         method: 'POST',
-        body: { email, role },
+        body: { email, role, inviterName },
       }),
+    listNotifications: () => authedFetch('/notifications'),
+    markNotificationRead: (id: string) =>
+      authedFetch(`/notifications/${id}/read`, { method: 'PATCH' }),
+    markAllNotificationsRead: () =>
+      authedFetch('/notifications/mark-all-read', { method: 'POST' }),
     createShareLink: (documentId: string, role: string) =>
       authedFetch(`/documents/${documentId}/share/link`, {
         method: 'POST',

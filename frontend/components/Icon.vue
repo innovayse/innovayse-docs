@@ -29,6 +29,7 @@ type IconName =
   | 'photo'
   | 'chat-bubble'
   | 'table'
+  | 'bell'
 
 defineProps<{ name: IconName; class?: string }>()
 
@@ -66,6 +67,8 @@ const strokePaths: Partial<Record<IconName, string>> = {
   'chat-bubble':
     'M4.5 5.25h15A1.5 1.5 0 0 1 21 6.75v8.25a1.5 1.5 0 0 1-1.5 1.5H8.25L4.5 20.25V16.5H4.5a1.5 1.5 0 0 1-1.5-1.5V6.75a1.5 1.5 0 0 1 1.5-1.5Z',
   table: 'M3.75 3.75h16.5v16.5H3.75Z M3.75 9h16.5M3.75 15h16.5M12 3.75v16.5',
+  bell:
+    'M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0',
 }
 
 const fillPaths: Partial<Record<IconName, string>> = {
