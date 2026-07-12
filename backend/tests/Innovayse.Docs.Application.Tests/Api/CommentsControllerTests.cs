@@ -1,7 +1,9 @@
 using Innovayse.Docs.API.Comments;
 using Innovayse.Docs.Application.Comments;
+using Innovayse.Docs.Application.Notifications;
 using Innovayse.Docs.Application.Sharing;
 using Innovayse.Docs.Domain.Comments;
+using Innovayse.Docs.Domain.Notifications;
 using Innovayse.Docs.Domain.Sharing;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -20,7 +22,8 @@ public class CommentsControllerTests
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
             .ReturnsAsync(true);
-        var controller = new CommentsController(commentRepo.Object, permService.Object);
+        var notificationRepo = new Mock<INotificationRepository>();
+        var controller = new CommentsController(commentRepo.Object, permService.Object, notificationRepo.Object);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.Create(documentId, new CommentsController.CreateCommentRequest
@@ -44,7 +47,8 @@ public class CommentsControllerTests
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
             .ReturnsAsync(false);
-        var controller = new CommentsController(commentRepo.Object, permService.Object);
+        var notificationRepo = new Mock<INotificationRepository>();
+        var controller = new CommentsController(commentRepo.Object, permService.Object, notificationRepo.Object);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.Create(documentId, new CommentsController.CreateCommentRequest
@@ -70,7 +74,8 @@ public class CommentsControllerTests
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
             .ReturnsAsync(true);
-        var controller = new CommentsController(commentRepo.Object, permService.Object);
+        var notificationRepo = new Mock<INotificationRepository>();
+        var controller = new CommentsController(commentRepo.Object, permService.Object, notificationRepo.Object);
         controller.SetCallerIdForTesting(callerId);
 
         await controller.Create(documentId, new CommentsController.CreateCommentRequest
@@ -97,7 +102,8 @@ public class CommentsControllerTests
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
             .ReturnsAsync(true);
-        var controller = new CommentsController(commentRepo.Object, permService.Object);
+        var notificationRepo = new Mock<INotificationRepository>();
+        var controller = new CommentsController(commentRepo.Object, permService.Object, notificationRepo.Object);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.Update(documentId, comment.Id, new CommentsController.UpdateCommentRequest { Resolved = true });
@@ -115,7 +121,8 @@ public class CommentsControllerTests
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
             .ReturnsAsync(false);
-        var controller = new CommentsController(commentRepo.Object, permService.Object);
+        var notificationRepo = new Mock<INotificationRepository>();
+        var controller = new CommentsController(commentRepo.Object, permService.Object, notificationRepo.Object);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.Update(documentId, Guid.NewGuid(), new CommentsController.UpdateCommentRequest { Resolved = true });
@@ -135,11 +142,63 @@ public class CommentsControllerTests
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
             .ReturnsAsync(true);
-        var controller = new CommentsController(commentRepo.Object, permService.Object);
+        var notificationRepo = new Mock<INotificationRepository>();
+        var controller = new CommentsController(commentRepo.Object, permService.Object, notificationRepo.Object);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.Update(documentId, comment.Id, new CommentsController.UpdateCommentRequest { Resolved = true });
 
         Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task Create_TopLevelComment_NotifiesOtherParticipantsNotAuthor()
+    {
+        var documentId = Guid.NewGuid();
+        var callerId = Guid.NewGuid();
+        var otherParticipantId = Guid.NewGuid();
+        var commentRepo = new Mock<ICommentRepository>();
+        var permService = new Mock<IPermissionService>();
+        permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter)).ReturnsAsync(true);
+        permService.Setup(p => p.GetDocumentParticipantUserIdsAsync(documentId))
+            .ReturnsAsync(new List<Guid> { callerId, otherParticipantId });
+        var notificationRepo = new Mock<INotificationRepository>();
+        var controller = new CommentsController(commentRepo.Object, permService.Object, notificationRepo.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        await controller.Create(documentId, new CommentsController.CreateCommentRequest
+        {
+            Text = "New comment", AuthorName = "Ada", AnchorPosition = 0,
+        });
+
+        notificationRepo.Verify(r => r.CreateAsync(It.Is<Notification>(n =>
+            n.RecipientUserId == otherParticipantId &&
+            n.Type == NotificationType.NewComment &&
+            n.DocumentId == documentId &&
+            n.ActorUserId == callerId)), Times.Once);
+        notificationRepo.Verify(r => r.CreateAsync(It.Is<Notification>(n => n.RecipientUserId == callerId)), Times.Never);
+    }
+
+    [Fact]
+    public async Task Create_Reply_NotifiesWithReplyType()
+    {
+        var documentId = Guid.NewGuid();
+        var callerId = Guid.NewGuid();
+        var otherParticipantId = Guid.NewGuid();
+        var commentRepo = new Mock<ICommentRepository>();
+        var permService = new Mock<IPermissionService>();
+        permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter)).ReturnsAsync(true);
+        permService.Setup(p => p.GetDocumentParticipantUserIdsAsync(documentId))
+            .ReturnsAsync(new List<Guid> { callerId, otherParticipantId });
+        var notificationRepo = new Mock<INotificationRepository>();
+        var controller = new CommentsController(commentRepo.Object, permService.Object, notificationRepo.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        await controller.Create(documentId, new CommentsController.CreateCommentRequest
+        {
+            Text = "A reply", AuthorName = "Ada", AnchorPosition = 0, ParentCommentId = Guid.NewGuid(),
+        });
+
+        notificationRepo.Verify(r => r.CreateAsync(It.Is<Notification>(n => n.Type == NotificationType.NewReply)), Times.Once);
     }
 }

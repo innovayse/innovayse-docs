@@ -1,6 +1,7 @@
 using Innovayse.Docs.API.Sharing;
 using Innovayse.Docs.Application.Documents;
 using Innovayse.Docs.Application.Identity;
+using Innovayse.Docs.Application.Notifications;
 using Innovayse.Docs.Application.Sharing;
 using Innovayse.Docs.Domain.Documents;
 using Innovayse.Docs.Domain.Sharing;
@@ -25,7 +26,8 @@ public class SharingControllerRedeemTests
             shareLinkRepository.Object,
             permissionService.Object,
             new Mock<ISsoUserLookupService>().Object,
-            documentRepository.Object);
+            documentRepository.Object,
+            new Mock<INotificationRepository>().Object);
         controller.SetCallerIdForTesting(callerId);
         return controller;
     }

@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using Innovayse.Docs.Application.Comments;
+using Innovayse.Docs.Application.Notifications;
 using Innovayse.Docs.Application.Sharing;
 using Innovayse.Docs.Domain.Comments;
+using Innovayse.Docs.Domain.Notifications;
 using Innovayse.Docs.Domain.Sharing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,12 +17,17 @@ public class CommentsController : ControllerBase
 {
     private readonly ICommentRepository _commentRepository;
     private readonly IPermissionService _permissionService;
+    private readonly INotificationRepository _notificationRepository;
     private Guid? _callerIdOverride;
 
-    public CommentsController(ICommentRepository commentRepository, IPermissionService permissionService)
+    public CommentsController(
+        ICommentRepository commentRepository,
+        IPermissionService permissionService,
+        INotificationRepository notificationRepository)
     {
         _commentRepository = commentRepository;
         _permissionService = permissionService;
+        _notificationRepository = notificationRepository;
     }
 
     internal void SetCallerIdForTesting(Guid callerId) => _callerIdOverride = callerId;
@@ -55,6 +62,25 @@ public class CommentsController : ControllerBase
             CreatedAt = DateTimeOffset.UtcNow
         };
         await _commentRepository.CreateAsync(comment);
+
+        var participantIds = await _permissionService.GetDocumentParticipantUserIdsAsync(documentId) ?? [];
+        var notificationType = request.ParentCommentId.HasValue ? NotificationType.NewReply : NotificationType.NewComment;
+        var previewText = request.Text.Length > 80 ? request.Text[..80] : request.Text;
+        foreach (var recipientId in participantIds.Where(id => id != CallerId))
+        {
+            await _notificationRepository.CreateAsync(new Notification
+            {
+                Id = Guid.NewGuid(),
+                RecipientUserId = recipientId,
+                Type = notificationType,
+                ActorUserId = CallerId,
+                ActorName = request.AuthorName,
+                DocumentId = documentId,
+                PreviewText = previewText,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+        }
+
         return Created($"/documents/{documentId}/comments/{comment.Id}", comment);
     }
 

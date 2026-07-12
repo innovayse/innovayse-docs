@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using Innovayse.Docs.Application.Documents;
 using Innovayse.Docs.Application.Identity;
+using Innovayse.Docs.Application.Notifications;
 using Innovayse.Docs.Application.Sharing;
+using Innovayse.Docs.Domain.Notifications;
 using Innovayse.Docs.Domain.Sharing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +20,7 @@ public class SharingController : ControllerBase
     private readonly IPermissionService _permissionService;
     private readonly ISsoUserLookupService _ssoUserLookupService;
     private readonly IDocumentRepository _documentRepository;
+    private readonly INotificationRepository _notificationRepository;
     private Guid? _callerIdOverride;
 
     public SharingController(
@@ -25,13 +28,15 @@ public class SharingController : ControllerBase
         IShareLinkRepository shareLinkRepository,
         IPermissionService permissionService,
         ISsoUserLookupService ssoUserLookupService,
-        IDocumentRepository documentRepository)
+        IDocumentRepository documentRepository,
+        INotificationRepository notificationRepository)
     {
         _permissionRepository = permissionRepository;
         _shareLinkRepository = shareLinkRepository;
         _permissionService = permissionService;
         _ssoUserLookupService = ssoUserLookupService;
         _documentRepository = documentRepository;
+        _notificationRepository = notificationRepository;
     }
 
     internal void SetCallerIdForTesting(Guid callerId) => _callerIdOverride = callerId;
@@ -50,6 +55,7 @@ public class SharingController : ControllerBase
     {
         public string Email { get; set; } = string.Empty;
         public DocumentRole Role { get; set; }
+        public string InviterName { get; set; } = string.Empty;
     }
 
     [HttpPost("invite")]
@@ -76,6 +82,20 @@ public class SharingController : ControllerBase
             GrantedBy = CallerId,
             CreatedAt = DateTimeOffset.UtcNow
         });
+
+        var document = await _documentRepository.GetByIdAsync(documentId);
+        await _notificationRepository.CreateAsync(new Notification
+        {
+            Id = Guid.NewGuid(),
+            RecipientUserId = user.Id,
+            Type = NotificationType.DocumentShared,
+            ActorUserId = CallerId,
+            ActorName = request.InviterName,
+            DocumentId = documentId,
+            PreviewText = document?.Title ?? "Untitled document",
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
         return NoContent();
     }
 
