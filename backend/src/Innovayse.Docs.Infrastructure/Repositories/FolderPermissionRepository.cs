@@ -38,4 +38,7 @@ public class FolderPermissionRepository : IFolderPermissionRepository
         }
         await _context.SaveChangesAsync();
     }
+
+    public Task<List<FolderPermission>> ListForFolderAsync(Guid folderId) =>
+        _context.FolderPermissions.Where(p => p.FolderId == folderId).ToListAsync();
 }

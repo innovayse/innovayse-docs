@@ -11,4 +11,8 @@ public interface IFolderPermissionRepository
     /// direct grant on this folder — avoids piling up duplicate rows when the same person is
     /// invited more than once.</summary>
     Task UpsertAsync(FolderPermission permission);
+
+    /// <summary>Every direct grant on this folder — used to resolve the full set of
+    /// participants for a document filed in (or under) this folder.</summary>
+    Task<List<FolderPermission>> ListForFolderAsync(Guid folderId);
 }

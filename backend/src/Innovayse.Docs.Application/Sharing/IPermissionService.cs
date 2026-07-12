@@ -17,4 +17,10 @@ public interface IPermissionService
     /// max grant found at this folder or any ancestor in its <c>ParentFolderId</c> chain —
     /// or null if they have no access at all.</summary>
     Task<DocumentRole?> GetEffectiveFolderRoleAsync(Guid folderId, Guid userId);
+
+    /// <summary>Every user with effective access to a document: the owner, everyone with a
+    /// direct DocumentPermission, and everyone with a FolderPermission at the document's
+    /// folder or any ancestor in its ParentFolderId chain. Powers comment-notification
+    /// fan-out. Does not exclude the caller — callers filter out their own ID themselves.</summary>
+    Task<List<Guid>> GetDocumentParticipantUserIdsAsync(Guid documentId);
 }

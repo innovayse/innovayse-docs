@@ -68,4 +68,28 @@ public class FolderPermissionRepositoryTests
         var count = context.FolderPermissions.Count(p => p.FolderId == folderId && p.UserId == userId);
         Assert.Equal(1, count);
     }
+
+    [Fact]
+    public async Task ListForFolderAsync_ReturnsOnlyGrantsForThatFolder()
+    {
+        await using var context = CreateContext();
+        var repo = new FolderPermissionRepository(context);
+        var folderId = Guid.NewGuid();
+        var otherFolderId = Guid.NewGuid();
+        await repo.UpsertAsync(new FolderPermission
+        {
+            Id = Guid.NewGuid(), FolderId = folderId, UserId = Guid.NewGuid(),
+            Role = DocumentRole.Viewer, GrantedBy = Guid.NewGuid(), CreatedAt = DateTimeOffset.UtcNow,
+        });
+        await repo.UpsertAsync(new FolderPermission
+        {
+            Id = Guid.NewGuid(), FolderId = otherFolderId, UserId = Guid.NewGuid(),
+            Role = DocumentRole.Viewer, GrantedBy = Guid.NewGuid(), CreatedAt = DateTimeOffset.UtcNow,
+        });
+
+        var result = await repo.ListForFolderAsync(folderId);
+
+        Assert.Single(result);
+        Assert.Equal(folderId, result[0].FolderId);
+    }
 }

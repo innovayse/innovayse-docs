@@ -305,4 +305,133 @@ public class PermissionServiceTests
 
         Assert.Null(await sut.GetEffectiveFolderRoleAsync(folder.Id, userId));
     }
+
+    [Fact]
+    public async Task GetDocumentParticipantUserIdsAsync_OwnerOnly_ReturnsJustOwner()
+    {
+        var ownerId = Guid.NewGuid();
+        var document = new Document { Id = Guid.NewGuid(), OwnerId = ownerId };
+        var docRepo = new Mock<IDocumentRepository>();
+        docRepo.Setup(r => r.GetByIdAsync(document.Id)).ReturnsAsync(document);
+        var permRepo = new Mock<IPermissionRepository>();
+        permRepo.Setup(r => r.ListForDocumentAsync(document.Id)).ReturnsAsync(new List<DocumentPermission>());
+        var folderPermRepo = new Mock<IFolderPermissionRepository>();
+
+        var sut = new PermissionService(docRepo.Object, permRepo.Object, folderPermRepo.Object, EmptyFolderRepo().Object);
+
+        var result = await sut.GetDocumentParticipantUserIdsAsync(document.Id);
+
+        Assert.Equal(new[] { ownerId }, result);
+    }
+
+    [Fact]
+    public async Task GetDocumentParticipantUserIdsAsync_IncludesDirectGrantees()
+    {
+        var ownerId = Guid.NewGuid();
+        var granteeId = Guid.NewGuid();
+        var document = new Document { Id = Guid.NewGuid(), OwnerId = ownerId };
+        var docRepo = new Mock<IDocumentRepository>();
+        docRepo.Setup(r => r.GetByIdAsync(document.Id)).ReturnsAsync(document);
+        var permRepo = new Mock<IPermissionRepository>();
+        permRepo.Setup(r => r.ListForDocumentAsync(document.Id)).ReturnsAsync(new List<DocumentPermission>
+        {
+            new() { Id = Guid.NewGuid(), DocumentId = document.Id, UserId = granteeId, Role = DocumentRole.Viewer, GrantedBy = ownerId, CreatedAt = DateTimeOffset.UtcNow },
+        });
+        var folderPermRepo = new Mock<IFolderPermissionRepository>();
+
+        var sut = new PermissionService(docRepo.Object, permRepo.Object, folderPermRepo.Object, EmptyFolderRepo().Object);
+
+        var result = await sut.GetDocumentParticipantUserIdsAsync(document.Id);
+
+        Assert.Contains(ownerId, result);
+        Assert.Contains(granteeId, result);
+        Assert.Equal(2, result.Count);
+    }
+
+    [Fact]
+    public async Task GetDocumentParticipantUserIdsAsync_IncludesFolderInheritedParticipants()
+    {
+        var ownerId = Guid.NewGuid();
+        var folderGranteeId = Guid.NewGuid();
+        var folderId = Guid.NewGuid();
+        var document = new Document { Id = Guid.NewGuid(), OwnerId = ownerId, FolderId = folderId };
+        var docRepo = new Mock<IDocumentRepository>();
+        docRepo.Setup(r => r.GetByIdAsync(document.Id)).ReturnsAsync(document);
+        var permRepo = new Mock<IPermissionRepository>();
+        permRepo.Setup(r => r.ListForDocumentAsync(document.Id)).ReturnsAsync(new List<DocumentPermission>());
+        var folderPermRepo = new Mock<IFolderPermissionRepository>();
+        folderPermRepo.Setup(r => r.ListForFolderAsync(folderId)).ReturnsAsync(new List<FolderPermission>
+        {
+            new() { Id = Guid.NewGuid(), FolderId = folderId, UserId = folderGranteeId, Role = DocumentRole.Viewer, GrantedBy = ownerId, CreatedAt = DateTimeOffset.UtcNow },
+        });
+        var folderRepo = new Mock<IFolderRepository>();
+        folderRepo.Setup(r => r.GetByIdAsync(folderId)).ReturnsAsync(new Folder { Id = folderId, OwnerId = ownerId });
+
+        var sut = new PermissionService(docRepo.Object, permRepo.Object, folderPermRepo.Object, folderRepo.Object);
+
+        var result = await sut.GetDocumentParticipantUserIdsAsync(document.Id);
+
+        Assert.Contains(ownerId, result);
+        Assert.Contains(folderGranteeId, result);
+    }
+
+    [Fact]
+    public async Task GetDocumentParticipantUserIdsAsync_IncludesGrandparentFolderParticipants()
+    {
+        var ownerId = Guid.NewGuid();
+        var grandparentGranteeId = Guid.NewGuid();
+        var parentFolderId = Guid.NewGuid();
+        var folderId = Guid.NewGuid();
+        var document = new Document { Id = Guid.NewGuid(), OwnerId = ownerId, FolderId = folderId };
+        var docRepo = new Mock<IDocumentRepository>();
+        docRepo.Setup(r => r.GetByIdAsync(document.Id)).ReturnsAsync(document);
+        var permRepo = new Mock<IPermissionRepository>();
+        permRepo.Setup(r => r.ListForDocumentAsync(document.Id)).ReturnsAsync(new List<DocumentPermission>());
+        var folderPermRepo = new Mock<IFolderPermissionRepository>();
+        folderPermRepo.Setup(r => r.ListForFolderAsync(folderId)).ReturnsAsync(new List<FolderPermission>());
+        folderPermRepo.Setup(r => r.ListForFolderAsync(parentFolderId)).ReturnsAsync(new List<FolderPermission>
+        {
+            new() { Id = Guid.NewGuid(), FolderId = parentFolderId, UserId = grandparentGranteeId, Role = DocumentRole.Viewer, GrantedBy = ownerId, CreatedAt = DateTimeOffset.UtcNow },
+        });
+        var folderRepo = new Mock<IFolderRepository>();
+        folderRepo.Setup(r => r.GetByIdAsync(folderId))
+            .ReturnsAsync(new Folder { Id = folderId, OwnerId = ownerId, ParentFolderId = parentFolderId });
+        folderRepo.Setup(r => r.GetByIdAsync(parentFolderId))
+            .ReturnsAsync(new Folder { Id = parentFolderId, OwnerId = ownerId });
+
+        var sut = new PermissionService(docRepo.Object, permRepo.Object, folderPermRepo.Object, folderRepo.Object);
+
+        var result = await sut.GetDocumentParticipantUserIdsAsync(document.Id);
+
+        Assert.Contains(grandparentGranteeId, result);
+    }
+
+    [Fact]
+    public async Task GetDocumentParticipantUserIdsAsync_DuplicateAcrossDirectAndFolderGrant_AppearsOnce()
+    {
+        var ownerId = Guid.NewGuid();
+        var sharedUserId = Guid.NewGuid();
+        var folderId = Guid.NewGuid();
+        var document = new Document { Id = Guid.NewGuid(), OwnerId = ownerId, FolderId = folderId };
+        var docRepo = new Mock<IDocumentRepository>();
+        docRepo.Setup(r => r.GetByIdAsync(document.Id)).ReturnsAsync(document);
+        var permRepo = new Mock<IPermissionRepository>();
+        permRepo.Setup(r => r.ListForDocumentAsync(document.Id)).ReturnsAsync(new List<DocumentPermission>
+        {
+            new() { Id = Guid.NewGuid(), DocumentId = document.Id, UserId = sharedUserId, Role = DocumentRole.Viewer, GrantedBy = ownerId, CreatedAt = DateTimeOffset.UtcNow },
+        });
+        var folderPermRepo = new Mock<IFolderPermissionRepository>();
+        folderPermRepo.Setup(r => r.ListForFolderAsync(folderId)).ReturnsAsync(new List<FolderPermission>
+        {
+            new() { Id = Guid.NewGuid(), FolderId = folderId, UserId = sharedUserId, Role = DocumentRole.Editor, GrantedBy = ownerId, CreatedAt = DateTimeOffset.UtcNow },
+        });
+        var folderRepo = new Mock<IFolderRepository>();
+        folderRepo.Setup(r => r.GetByIdAsync(folderId)).ReturnsAsync(new Folder { Id = folderId, OwnerId = ownerId });
+
+        var sut = new PermissionService(docRepo.Object, permRepo.Object, folderPermRepo.Object, folderRepo.Object);
+
+        var result = await sut.GetDocumentParticipantUserIdsAsync(document.Id);
+
+        Assert.Equal(1, result.Count(id => id == sharedUserId));
+    }
 }

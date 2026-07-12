@@ -84,4 +84,42 @@ public class PermissionService : IPermissionService
 
         return highest;
     }
+
+    public async Task<List<Guid>> GetDocumentParticipantUserIdsAsync(Guid documentId)
+    {
+        var document = await _documentRepository.GetByIdAsync(documentId);
+        if (document is null) return new List<Guid>();
+
+        var participantIds = new HashSet<Guid> { document.OwnerId };
+
+        var directGrants = await _permissionRepository.ListForDocumentAsync(documentId);
+        foreach (var grant in directGrants) participantIds.Add(grant.UserId);
+
+        foreach (var userId in await GetFolderChainParticipantIdsAsync(document.FolderId))
+            participantIds.Add(userId);
+
+        return participantIds.ToList();
+    }
+
+    /// <summary>Walks from <paramref name="startFolderId"/> up through ParentFolderId,
+    /// collecting every distinct UserId with a FolderPermission at any level. Mirrors
+    /// GetHighestFolderChainRoleAsync's walk but collects participants instead of a role.</summary>
+    private async Task<HashSet<Guid>> GetFolderChainParticipantIdsAsync(Guid? startFolderId)
+    {
+        var participantIds = new HashSet<Guid>();
+        var currentFolderId = startFolderId;
+        var depth = 0;
+
+        while (currentFolderId.HasValue && depth < MaxFolderChainDepth)
+        {
+            var grants = await _folderPermissionRepository.ListForFolderAsync(currentFolderId.Value);
+            foreach (var grant in grants) participantIds.Add(grant.UserId);
+
+            var folder = await _folderRepository.GetByIdAsync(currentFolderId.Value);
+            currentFolderId = folder?.ParentFolderId;
+            depth++;
+        }
+
+        return participantIds;
+    }
 }
