@@ -102,12 +102,42 @@ body {
     box-shadow: none;
   }
 
+  /* The layout chrome wrapping .page-surface (outer page container, glass-panel section,
+     and the flex row centering the page) contributes extra top padding/margin that isn't
+     accounted for in CollaborativeEditor.vue's PAGE_CONTENT_HEIGHT budget (which only
+     reserves .page-surface's own 96px padding + 32px footer). Left unreset, that chrome
+     offset pushes page 1's real printed content past the physical A4 page boundary before
+     our own break-after markers fire, producing a spurious near-blank extra page. Zero it
+     out for print so .page-surface's content starts flush with the physical page top. */
+  .mx-auto.max-w-6xl.py-8,
+  .glass-panel.py-8,
+  .pt-6.pb-10 {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  .ProseMirror,
+  .ProseMirror * {
+    color: #000 !important;
+  }
+
   .page-break-after {
     break-after: page;
   }
 
   .page-break-gap {
     height: 0;
+  }
+
+  .page-break-footer {
+    margin-top: 0;
+    padding-bottom: 0;
+    line-height: 32px;
+    height: 32px;
   }
 }
 
