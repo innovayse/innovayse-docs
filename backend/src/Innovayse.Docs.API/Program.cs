@@ -31,6 +31,8 @@ builder.Services.AddScoped<Innovayse.Docs.Application.Comments.ICommentRepositor
     Innovayse.Docs.Infrastructure.Repositories.CommentRepository>();
 builder.Services.AddScoped<Innovayse.Docs.Application.Versions.IVersionRepository,
     Innovayse.Docs.Infrastructure.Repositories.VersionRepository>();
+builder.Services.AddScoped<Innovayse.Docs.Application.Notifications.INotificationRepository,
+    Innovayse.Docs.Infrastructure.Repositories.NotificationRepository>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

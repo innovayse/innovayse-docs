@@ -1,5 +1,6 @@
 using Innovayse.Docs.Domain.Comments;
 using Innovayse.Docs.Domain.Documents;
+using Innovayse.Docs.Domain.Notifications;
 using Innovayse.Docs.Domain.Sharing;
 using Innovayse.Docs.Domain.Versions;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ public class DocsDbContext : DbContext
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<DocumentUpdate> DocumentUpdates => Set<DocumentUpdate>();
     public DbSet<DocumentVersion> DocumentVersions => Set<DocumentVersion>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,5 +32,6 @@ public class DocsDbContext : DbContext
         modelBuilder.Entity<Comment>().HasKey(c => c.Id);
         modelBuilder.Entity<DocumentUpdate>().HasKey(u => u.Id);
         modelBuilder.Entity<DocumentVersion>().HasKey(v => v.Id);
+        modelBuilder.Entity<Notification>().HasKey(n => n.Id);
     }
 }
