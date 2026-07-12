@@ -40,7 +40,7 @@ async function generateLink() {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 z-20 flex items-center justify-center bg-black/60 px-4" @click.self="emit('close')">
+    <div v-if="open" class="no-print fixed inset-0 z-20 flex items-center justify-center bg-black/60 px-4" @click.self="emit('close')">
       <div class="glass-panel w-full max-w-md rounded-[var(--radius-card)] p-6">
         <div class="mb-5 flex items-center justify-between">
           <h2 class="text-base font-semibold text-[var(--text-heading)]">

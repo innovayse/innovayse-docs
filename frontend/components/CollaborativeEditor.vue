@@ -51,7 +51,10 @@ const undoManager = new Y.UndoManager(ydoc.getXmlFragment('default'), {
 const PAGE_WIDTH = 794
 const PAGE_MIN_HEIGHT = 1123
 // Usable content height per page for pagination: page height minus the page-surface's
-// own py-12 top+bottom padding (96px) minus a 32px reserved footer strip.
+// own py-12 top+bottom padding (96px) minus a 32px reserved footer strip. Any ancestor
+// wrapper placed around .page-surface must carry the print-chrome-reset class (see
+// assets/css/main.css) or its padding/margin eats into this budget under @media print,
+// pushing the footer past the physical page boundary and producing a spurious extra page.
 const PAGE_CONTENT_HEIGHT = PAGE_MIN_HEIGHT - 96 - 32
 
 const editor = useEditor({
