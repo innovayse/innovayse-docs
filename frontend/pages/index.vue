@@ -109,7 +109,7 @@ async function addFolder(name: string) {
   creatingFolder.value = true
   try {
     const folder = (await createFolder(name, currentFolderId.value)) as FolderSummary
-    folders.value.push(folder)
+    folders.value.push({ ...folder, role: 'Owner' })
   } finally {
     creatingFolder.value = false
   }

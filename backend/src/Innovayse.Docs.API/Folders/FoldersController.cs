@@ -42,6 +42,12 @@ public class FoldersController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Folder>> Create(CreateFolderRequest request)
     {
+        if (request.ParentFolderId is Guid parentFolderId
+            && !await _permissionService.AuthorizeFolderAsync(parentFolderId, CallerId, DocumentRole.Editor))
+        {
+            return Forbid();
+        }
+
         var folder = new Folder
         {
             Id = Guid.NewGuid(),

@@ -29,6 +29,56 @@ public class FoldersControllerTests
     }
 
     [Fact]
+    public async Task Create_WithParentFolder_SucceedsWhenCallerHasEditorAccess()
+    {
+        var folderRepo = new Mock<IFolderRepository>();
+        var permissionService = new Mock<IPermissionService>();
+        var callerId = Guid.NewGuid();
+        var parentFolderId = Guid.NewGuid();
+        permissionService
+            .Setup(p => p.AuthorizeFolderAsync(parentFolderId, callerId, DocumentRole.Editor))
+            .ReturnsAsync(true);
+        var controller = new FoldersController(folderRepo.Object, permissionService.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.Create(new FoldersController.CreateFolderRequest
+        {
+            Name = "Subfolder",
+            ParentFolderId = parentFolderId
+        });
+
+        var created = Assert.IsType<CreatedResult>(result.Result);
+        var folder = Assert.IsType<Folder>(created.Value);
+        Assert.Equal("Subfolder", folder.Name);
+        Assert.Equal(callerId, folder.OwnerId);
+        Assert.Equal(parentFolderId, folder.ParentFolderId);
+        folderRepo.Verify(r => r.CreateAsync(It.IsAny<Folder>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Create_WithParentFolder_ForbidsWhenCallerLacksAccess()
+    {
+        var folderRepo = new Mock<IFolderRepository>();
+        var permissionService = new Mock<IPermissionService>();
+        var callerId = Guid.NewGuid();
+        var parentFolderId = Guid.NewGuid();
+        permissionService
+            .Setup(p => p.AuthorizeFolderAsync(parentFolderId, callerId, DocumentRole.Editor))
+            .ReturnsAsync(false);
+        var controller = new FoldersController(folderRepo.Object, permissionService.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.Create(new FoldersController.CreateFolderRequest
+        {
+            Name = "Subfolder",
+            ParentFolderId = parentFolderId
+        });
+
+        Assert.IsType<ForbidResult>(result.Result);
+        folderRepo.Verify(r => r.CreateAsync(It.IsAny<Folder>()), Times.Never);
+    }
+
+    [Fact]
     public async Task List_ReturnsFoldersWithCallerRole()
     {
         var callerId = Guid.NewGuid();
