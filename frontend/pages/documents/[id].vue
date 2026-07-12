@@ -92,7 +92,7 @@ async function handleRestoreVersion(versionId: string) {
 
 <template>
   <div class="flex min-h-screen flex-col">
-    <header class="glass-panel sticky top-0 z-10 flex items-center justify-between gap-4 border-x-0 border-t-0 px-6 py-3">
+    <header class="no-print glass-panel sticky top-0 z-10 flex items-center justify-between gap-4 border-x-0 border-t-0 px-6 py-3">
       <div class="flex min-w-0 items-center gap-3">
         <NuxtLink to="/" class="shrink-0">
           <img src="/logo.png" alt="Innovayse" class="h-7 w-7 rounded-lg" />
@@ -151,7 +151,7 @@ async function handleRestoreVersion(versionId: string) {
         </ClientOnly>
       </section>
 
-      <aside v-if="documentReady" class="hidden w-80 shrink-0 lg:block">
+      <aside v-if="documentReady" class="no-print hidden w-80 shrink-0 lg:block">
         <CommentsSidebar
           ref="commentsSidebarRef"
           :document-id="route.params.id as string"

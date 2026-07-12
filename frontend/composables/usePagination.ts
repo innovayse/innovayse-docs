@@ -65,6 +65,7 @@ function breaksEqual(a: number[], b: number[]): boolean {
 function buildBreakWidget(pageNumber: number): HTMLElement {
   const wrapper = document.createElement('div')
   wrapper.setAttribute('contenteditable', 'false')
+  wrapper.className = 'page-break-after'
 
   const footer = document.createElement('div')
   footer.className = 'page-break-footer'

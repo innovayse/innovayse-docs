@@ -89,6 +89,33 @@ body {
   height: 2rem;
 }
 
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .page-surface {
+    zoom: 1 !important;
+    background: none;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+  }
+
+  .page-break-after {
+    break-after: page;
+  }
+
+  .page-break-gap {
+    height: 0;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
 .accent-gradient {
   background: var(--accent-gradient);
 }

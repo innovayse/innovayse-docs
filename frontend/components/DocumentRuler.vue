@@ -45,7 +45,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="rulerRef" class="relative h-6 select-none border-b border-white/10">
+  <div ref="rulerRef" class="no-print relative h-6 select-none border-b border-white/10">
     <div class="absolute inset-0 flex items-end">
       <span
         v-for="n in TICK_COUNT"

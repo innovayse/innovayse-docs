@@ -155,7 +155,7 @@ function applyZoom(event: Event) {
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-1 border-b border-white/10 px-2 py-2">
+  <div class="no-print flex flex-wrap items-center gap-1 border-b border-white/10 px-2 py-2">
     <button type="button" title="Undo" class="toolbar-btn" :disabled="!canUndo" @click="undoManager.undo()">
       <Icon name="arrow-undo" class="h-4 w-4" />
     </button>
