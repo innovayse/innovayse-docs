@@ -31,6 +31,8 @@ function messageFor(n: NotificationRecord): string {
       return `${n.actorName} shared "${n.previewText}" with you`
     case 'FolderShared':
       return `${n.actorName} shared the folder "${n.previewText}" with you`
+    default:
+      return `${n.actorName} sent you a notification`
   }
 }
 

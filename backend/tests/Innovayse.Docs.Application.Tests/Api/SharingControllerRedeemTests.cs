@@ -7,6 +7,7 @@ using Innovayse.Docs.Domain.Documents;
 using Innovayse.Docs.Domain.Sharing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -27,7 +28,8 @@ public class SharingControllerRedeemTests
             permissionService.Object,
             new Mock<ISsoUserLookupService>().Object,
             documentRepository.Object,
-            new Mock<INotificationRepository>().Object);
+            new Mock<INotificationRepository>().Object,
+            NullLogger<SharingController>.Instance);
         controller.SetCallerIdForTesting(callerId);
         return controller;
     }

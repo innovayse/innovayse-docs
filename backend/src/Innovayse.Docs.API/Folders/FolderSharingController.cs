@@ -7,6 +7,7 @@ using Innovayse.Docs.Domain.Notifications;
 using Innovayse.Docs.Domain.Sharing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Innovayse.Docs.API.Folders;
 
@@ -20,6 +21,7 @@ public class FolderSharingController : ControllerBase
     private readonly ISsoUserLookupService _ssoUserLookupService;
     private readonly IFolderRepository _folderRepository;
     private readonly INotificationRepository _notificationRepository;
+    private readonly ILogger<FolderSharingController> _logger;
     private Guid? _callerIdOverride;
 
     public FolderSharingController(
@@ -27,13 +29,15 @@ public class FolderSharingController : ControllerBase
         IPermissionService permissionService,
         ISsoUserLookupService ssoUserLookupService,
         IFolderRepository folderRepository,
-        INotificationRepository notificationRepository)
+        INotificationRepository notificationRepository,
+        ILogger<FolderSharingController> logger)
     {
         _folderPermissionRepository = folderPermissionRepository;
         _permissionService = permissionService;
         _ssoUserLookupService = ssoUserLookupService;
         _folderRepository = folderRepository;
         _notificationRepository = notificationRepository;
+        _logger = logger;
     }
 
     internal void SetCallerIdForTesting(Guid callerId) => _callerIdOverride = callerId;
@@ -77,18 +81,25 @@ public class FolderSharingController : ControllerBase
             CreatedAt = DateTimeOffset.UtcNow
         });
 
-        var folder = await _folderRepository.GetByIdAsync(folderId);
-        await _notificationRepository.CreateAsync(new Notification
+        try
         {
-            Id = Guid.NewGuid(),
-            RecipientUserId = user.Id,
-            Type = NotificationType.FolderShared,
-            ActorUserId = CallerId,
-            ActorName = request.InviterName,
-            FolderId = folderId,
-            PreviewText = folder?.Name ?? "Untitled folder",
-            CreatedAt = DateTimeOffset.UtcNow
-        });
+            var folder = await _folderRepository.GetByIdAsync(folderId);
+            await _notificationRepository.CreateAsync(new Notification
+            {
+                Id = Guid.NewGuid(),
+                RecipientUserId = user.Id,
+                Type = NotificationType.FolderShared,
+                ActorUserId = CallerId,
+                ActorName = request.InviterName,
+                FolderId = folderId,
+                PreviewText = folder?.Name ?? "Untitled folder",
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create share notification for folder {FolderId}, recipient {RecipientId}", folderId, user.Id);
+        }
 
         return NoContent();
     }

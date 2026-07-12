@@ -6,6 +6,7 @@ using Innovayse.Docs.Application.Sharing;
 using Innovayse.Docs.Domain.Notifications;
 using Innovayse.Docs.Domain.Sharing;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -25,7 +26,7 @@ public class FolderSharingControllerTests
         var lookup = new Mock<ISsoUserLookupService>();
         lookup.Setup(l => l.FindByEmailAsync("friend@example.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SsoUserLookupResult(invitedUserId, "friend@example.com", "Friend"));
-        var controller = new FolderSharingController(folderPermRepo.Object, permissionService.Object, lookup.Object, new Mock<IFolderRepository>().Object, new Mock<INotificationRepository>().Object);
+        var controller = new FolderSharingController(folderPermRepo.Object, permissionService.Object, lookup.Object, new Mock<IFolderRepository>().Object, new Mock<INotificationRepository>().Object, NullLogger<FolderSharingController>.Instance);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.InviteUser(folderId,
@@ -46,7 +47,7 @@ public class FolderSharingControllerTests
         var permissionService = new Mock<IPermissionService>();
         permissionService.Setup(p => p.AuthorizeFolderAsync(folderId, It.IsAny<Guid>(), DocumentRole.Owner)).ReturnsAsync(false);
         var lookup = new Mock<ISsoUserLookupService>();
-        var controller = new FolderSharingController(folderPermRepo.Object, permissionService.Object, lookup.Object, new Mock<IFolderRepository>().Object, new Mock<INotificationRepository>().Object);
+        var controller = new FolderSharingController(folderPermRepo.Object, permissionService.Object, lookup.Object, new Mock<IFolderRepository>().Object, new Mock<INotificationRepository>().Object, NullLogger<FolderSharingController>.Instance);
         controller.SetCallerIdForTesting(Guid.NewGuid());
 
         var result = await controller.InviteUser(folderId,
@@ -66,7 +67,7 @@ public class FolderSharingControllerTests
         var permissionService = new Mock<IPermissionService>();
         permissionService.Setup(p => p.AuthorizeFolderAsync(folderId, callerId, DocumentRole.Owner)).ReturnsAsync(true);
         var lookup = new Mock<ISsoUserLookupService>();
-        var controller = new FolderSharingController(folderPermRepo.Object, permissionService.Object, lookup.Object, new Mock<IFolderRepository>().Object, new Mock<INotificationRepository>().Object);
+        var controller = new FolderSharingController(folderPermRepo.Object, permissionService.Object, lookup.Object, new Mock<IFolderRepository>().Object, new Mock<INotificationRepository>().Object, NullLogger<FolderSharingController>.Instance);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.InviteUser(folderId,
@@ -87,7 +88,7 @@ public class FolderSharingControllerTests
         var lookup = new Mock<ISsoUserLookupService>();
         lookup.Setup(l => l.FindByEmailAsync("ghost@example.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync((SsoUserLookupResult?)null);
-        var controller = new FolderSharingController(folderPermRepo.Object, permissionService.Object, lookup.Object, new Mock<IFolderRepository>().Object, new Mock<INotificationRepository>().Object);
+        var controller = new FolderSharingController(folderPermRepo.Object, permissionService.Object, lookup.Object, new Mock<IFolderRepository>().Object, new Mock<INotificationRepository>().Object, NullLogger<FolderSharingController>.Instance);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.InviteUser(folderId,
@@ -113,7 +114,7 @@ public class FolderSharingControllerTests
         folderRepo.Setup(r => r.GetByIdAsync(folderId))
             .ReturnsAsync(new Innovayse.Docs.Domain.Documents.Folder { Id = folderId, Name = "Project X", OwnerId = callerId });
         var notificationRepo = new Mock<INotificationRepository>();
-        var controller = new FolderSharingController(folderPermRepo.Object, permissionService.Object, lookup.Object, folderRepo.Object, notificationRepo.Object);
+        var controller = new FolderSharingController(folderPermRepo.Object, permissionService.Object, lookup.Object, folderRepo.Object, notificationRepo.Object, NullLogger<FolderSharingController>.Instance);
         controller.SetCallerIdForTesting(callerId);
 
         await controller.InviteUser(folderId, new FolderSharingController.InviteUserRequest

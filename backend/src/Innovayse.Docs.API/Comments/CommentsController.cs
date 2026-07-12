@@ -7,6 +7,7 @@ using Innovayse.Docs.Domain.Notifications;
 using Innovayse.Docs.Domain.Sharing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Innovayse.Docs.API.Comments;
 
@@ -18,16 +19,19 @@ public class CommentsController : ControllerBase
     private readonly ICommentRepository _commentRepository;
     private readonly IPermissionService _permissionService;
     private readonly INotificationRepository _notificationRepository;
+    private readonly ILogger<CommentsController> _logger;
     private Guid? _callerIdOverride;
 
     public CommentsController(
         ICommentRepository commentRepository,
         IPermissionService permissionService,
-        INotificationRepository notificationRepository)
+        INotificationRepository notificationRepository,
+        ILogger<CommentsController> logger)
     {
         _commentRepository = commentRepository;
         _permissionService = permissionService;
         _notificationRepository = notificationRepository;
+        _logger = logger;
     }
 
     internal void SetCallerIdForTesting(Guid callerId) => _callerIdOverride = callerId;
@@ -63,22 +67,32 @@ public class CommentsController : ControllerBase
         };
         await _commentRepository.CreateAsync(comment);
 
-        var participantIds = await _permissionService.GetDocumentParticipantUserIdsAsync(documentId);
-        var notificationType = request.ParentCommentId.HasValue ? NotificationType.NewReply : NotificationType.NewComment;
-        var previewText = request.Text.Length > 80 ? request.Text[..80] : request.Text;
-        foreach (var recipientId in participantIds.Where(id => id != CallerId))
+        // Notifications are a best-effort side effect — a failure here (e.g. a transient DB
+        // hiccup) must never surface as a failure of the comment post itself, since the
+        // comment has already been persisted successfully by this point.
+        try
         {
-            await _notificationRepository.CreateAsync(new Notification
+            var participantIds = await _permissionService.GetDocumentParticipantUserIdsAsync(documentId);
+            var notificationType = request.ParentCommentId.HasValue ? NotificationType.NewReply : NotificationType.NewComment;
+            var previewText = request.Text.Length > 80 ? request.Text[..80] : request.Text;
+            foreach (var recipientId in participantIds.Where(id => id != CallerId))
             {
-                Id = Guid.NewGuid(),
-                RecipientUserId = recipientId,
-                Type = notificationType,
-                ActorUserId = CallerId,
-                ActorName = request.AuthorName,
-                DocumentId = documentId,
-                PreviewText = previewText,
-                CreatedAt = DateTimeOffset.UtcNow
-            });
+                await _notificationRepository.CreateAsync(new Notification
+                {
+                    Id = Guid.NewGuid(),
+                    RecipientUserId = recipientId,
+                    Type = notificationType,
+                    ActorUserId = CallerId,
+                    ActorName = request.AuthorName,
+                    DocumentId = documentId,
+                    PreviewText = previewText,
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create notifications for comment {CommentId} on document {DocumentId}", comment.Id, documentId);
         }
 
         return Created($"/documents/{documentId}/comments/{comment.Id}", comment);

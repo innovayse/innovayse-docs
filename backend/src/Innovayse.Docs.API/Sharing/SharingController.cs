@@ -7,6 +7,7 @@ using Innovayse.Docs.Domain.Notifications;
 using Innovayse.Docs.Domain.Sharing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace Innovayse.Docs.API.Sharing;
 
@@ -21,6 +22,7 @@ public class SharingController : ControllerBase
     private readonly ISsoUserLookupService _ssoUserLookupService;
     private readonly IDocumentRepository _documentRepository;
     private readonly INotificationRepository _notificationRepository;
+    private readonly ILogger<SharingController> _logger;
     private Guid? _callerIdOverride;
 
     public SharingController(
@@ -29,7 +31,8 @@ public class SharingController : ControllerBase
         IPermissionService permissionService,
         ISsoUserLookupService ssoUserLookupService,
         IDocumentRepository documentRepository,
-        INotificationRepository notificationRepository)
+        INotificationRepository notificationRepository,
+        ILogger<SharingController> logger)
     {
         _permissionRepository = permissionRepository;
         _shareLinkRepository = shareLinkRepository;
@@ -37,6 +40,7 @@ public class SharingController : ControllerBase
         _ssoUserLookupService = ssoUserLookupService;
         _documentRepository = documentRepository;
         _notificationRepository = notificationRepository;
+        _logger = logger;
     }
 
     internal void SetCallerIdForTesting(Guid callerId) => _callerIdOverride = callerId;
@@ -83,18 +87,25 @@ public class SharingController : ControllerBase
             CreatedAt = DateTimeOffset.UtcNow
         });
 
-        var document = await _documentRepository.GetByIdAsync(documentId);
-        await _notificationRepository.CreateAsync(new Notification
+        try
         {
-            Id = Guid.NewGuid(),
-            RecipientUserId = user.Id,
-            Type = NotificationType.DocumentShared,
-            ActorUserId = CallerId,
-            ActorName = request.InviterName,
-            DocumentId = documentId,
-            PreviewText = document?.Title ?? "Untitled document",
-            CreatedAt = DateTimeOffset.UtcNow
-        });
+            var document = await _documentRepository.GetByIdAsync(documentId);
+            await _notificationRepository.CreateAsync(new Notification
+            {
+                Id = Guid.NewGuid(),
+                RecipientUserId = user.Id,
+                Type = NotificationType.DocumentShared,
+                ActorUserId = CallerId,
+                ActorName = request.InviterName,
+                DocumentId = documentId,
+                PreviewText = document?.Title ?? "Untitled document",
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create share notification for document {DocumentId}, recipient {RecipientId}", documentId, user.Id);
+        }
 
         return NoContent();
     }

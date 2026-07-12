@@ -5,6 +5,7 @@ using Innovayse.Docs.Application.Sharing;
 using Innovayse.Docs.Domain.Notifications;
 using Innovayse.Docs.Domain.Sharing;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -26,7 +27,8 @@ public class SharingControllerInviteTests
             permissionService.Object,
             lookup.Object,
             new Mock<Innovayse.Docs.Application.Documents.IDocumentRepository>().Object,
-            new Mock<INotificationRepository>().Object);
+            new Mock<INotificationRepository>().Object,
+            NullLogger<SharingController>.Instance);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.InviteUser(documentId, new SharingController.InviteUserRequest
@@ -56,7 +58,8 @@ public class SharingControllerInviteTests
             permissionService.Object,
             lookup.Object,
             new Mock<Innovayse.Docs.Application.Documents.IDocumentRepository>().Object,
-            new Mock<INotificationRepository>().Object);
+            new Mock<INotificationRepository>().Object,
+            NullLogger<SharingController>.Instance);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.InviteUser(documentId, new SharingController.InviteUserRequest
@@ -92,7 +95,8 @@ public class SharingControllerInviteTests
             permissionService.Object,
             lookup.Object,
             new Mock<Innovayse.Docs.Application.Documents.IDocumentRepository>().Object,
-            new Mock<INotificationRepository>().Object);
+            new Mock<INotificationRepository>().Object,
+            NullLogger<SharingController>.Instance);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.InviteUser(documentId, new SharingController.InviteUserRequest
@@ -123,7 +127,8 @@ public class SharingControllerInviteTests
             permissionService.Object,
             lookup.Object,
             new Mock<Innovayse.Docs.Application.Documents.IDocumentRepository>().Object,
-            new Mock<INotificationRepository>().Object);
+            new Mock<INotificationRepository>().Object,
+            NullLogger<SharingController>.Instance);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.InviteUser(documentId, new SharingController.InviteUserRequest
@@ -150,7 +155,8 @@ public class SharingControllerInviteTests
             permissionService.Object,
             new Mock<ISsoUserLookupService>().Object,
             new Mock<Innovayse.Docs.Application.Documents.IDocumentRepository>().Object,
-            new Mock<INotificationRepository>().Object);
+            new Mock<INotificationRepository>().Object,
+            NullLogger<SharingController>.Instance);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.CreateLink(documentId, new SharingController.CreateLinkRequest
@@ -183,7 +189,8 @@ public class SharingControllerInviteTests
             permissionService.Object,
             lookup.Object,
             documentRepo.Object,
-            notificationRepo.Object);
+            notificationRepo.Object,
+            NullLogger<SharingController>.Instance);
         controller.SetCallerIdForTesting(callerId);
 
         await controller.InviteUser(documentId, new SharingController.InviteUserRequest
