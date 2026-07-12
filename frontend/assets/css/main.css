@@ -109,9 +109,7 @@ body {
      offset pushes page 1's real printed content past the physical A4 page boundary before
      our own break-after markers fire, producing a spurious near-blank extra page. Zero it
      out for print so .page-surface's content starts flush with the physical page top. */
-  .mx-auto.max-w-6xl.py-8,
-  .glass-panel.py-8,
-  .pt-6.pb-10 {
+  .print-chrome-reset {
     padding: 0 !important;
     margin: 0 !important;
   }

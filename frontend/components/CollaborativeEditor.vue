@@ -178,7 +178,7 @@ watch([zoom, pageMarginLeft, pageMarginRight], async () => {
   <div class="mx-auto" :style="{ width: `${PAGE_WIDTH}px`, maxWidth: '100%' }">
     <DocumentRuler v-model:margin-left="pageMarginLeft" v-model:margin-right="pageMarginRight" />
   </div>
-  <div class="flex justify-center overflow-x-auto px-4 pb-10 pt-6">
+  <div class="print-chrome-reset flex justify-center overflow-x-auto px-4 pb-10 pt-6">
     <div
       class="page-surface shrink-0 rounded-sm py-12 shadow-xl"
       :style="{

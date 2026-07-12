@@ -136,8 +136,8 @@ async function handleRestoreVersion(versionId: string) {
       {{ shareLinkError }}
     </div>
 
-    <div class="mx-auto flex w-full max-w-6xl flex-1 items-stretch gap-6 px-6 py-8">
-      <section v-if="documentReady" class="glass-panel min-w-0 flex-1 rounded-[var(--radius-card)] py-8">
+    <div class="print-chrome-reset mx-auto flex w-full max-w-6xl flex-1 items-stretch gap-6 px-6 py-8">
+      <section v-if="documentReady" class="print-chrome-reset glass-panel min-w-0 flex-1 rounded-[var(--radius-card)] py-8">
         <ClientOnly>
           <CollaborativeEditor
             v-if="accessToken"
