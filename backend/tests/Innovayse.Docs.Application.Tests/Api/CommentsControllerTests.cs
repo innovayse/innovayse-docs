@@ -22,6 +22,8 @@ public class CommentsControllerTests
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
             .ReturnsAsync(true);
+        permService.Setup(p => p.GetDocumentParticipantUserIdsAsync(documentId))
+            .ReturnsAsync(new List<Guid>());
         var notificationRepo = new Mock<INotificationRepository>();
         var controller = new CommentsController(commentRepo.Object, permService.Object, notificationRepo.Object);
         controller.SetCallerIdForTesting(callerId);
@@ -74,6 +76,8 @@ public class CommentsControllerTests
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Commenter))
             .ReturnsAsync(true);
+        permService.Setup(p => p.GetDocumentParticipantUserIdsAsync(documentId))
+            .ReturnsAsync(new List<Guid>());
         var notificationRepo = new Mock<INotificationRepository>();
         var controller = new CommentsController(commentRepo.Object, permService.Object, notificationRepo.Object);
         controller.SetCallerIdForTesting(callerId);

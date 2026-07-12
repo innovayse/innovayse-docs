@@ -63,7 +63,7 @@ public class CommentsController : ControllerBase
         };
         await _commentRepository.CreateAsync(comment);
 
-        var participantIds = await _permissionService.GetDocumentParticipantUserIdsAsync(documentId) ?? [];
+        var participantIds = await _permissionService.GetDocumentParticipantUserIdsAsync(documentId);
         var notificationType = request.ParentCommentId.HasValue ? NotificationType.NewReply : NotificationType.NewComment;
         var previewText = request.Text.Length > 80 ? request.Text[..80] : request.Text;
         foreach (var recipientId in participantIds.Where(id => id != CallerId))
