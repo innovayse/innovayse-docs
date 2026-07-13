@@ -77,5 +77,14 @@ export function useDocsApi() {
       }),
     restoreVersion: (documentId: string, versionId: string) =>
       authedFetch(`/documents/${documentId}/versions/${versionId}/restore`, { method: 'POST' }),
+    listTabs: (documentId: string) => authedFetch(`/documents/${documentId}/tabs`),
+    createTab: (documentId: string, title: string) =>
+      authedFetch(`/documents/${documentId}/tabs`, { method: 'POST', body: { title } }),
+    renameTab: (documentId: string, tabId: string, title: string) =>
+      authedFetch(`/documents/${documentId}/tabs/${tabId}`, { method: 'PATCH', body: { title } }),
+    reorderTab: (documentId: string, tabId: string, orderIndex: number) =>
+      authedFetch(`/documents/${documentId}/tabs/${tabId}`, { method: 'PATCH', body: { orderIndex } }),
+    deleteTab: (documentId: string, tabId: string) =>
+      authedFetch(`/documents/${documentId}/tabs/${tabId}`, { method: 'DELETE' }),
   }
 }
