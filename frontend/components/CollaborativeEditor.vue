@@ -26,13 +26,13 @@ import { LineHeight } from '~/composables/useLineHeight'
 import { Indent } from '~/composables/useIndent'
 import { Pagination } from '~/composables/usePagination'
 
-const props = defineProps<{ documentId: string; accessToken: string; userName: string; canEdit: boolean }>()
+const props = defineProps<{ documentId: string; tabId: string; accessToken: string; userName: string; canEdit: boolean }>()
 const emit = defineEmits<{ 'insert-comment': [] }>()
 
 const ydoc = new Y.Doc()
 const provider = new HocuspocusProvider({
   url: 'ws://localhost:1234',
-  name: props.documentId,
+  name: `${props.documentId}:${props.tabId}`,
   token: props.accessToken,
   document: ydoc,
 })
