@@ -17,8 +17,9 @@ public class DocumentsControllerTests
     {
         var docRepo = new Mock<IDocumentRepository>();
         var permService = new Mock<IPermissionService>();
+        var tabRepo = new Mock<IDocumentTabRepository>();
         var callerId = Guid.NewGuid();
-        var controller = new DocumentsController(docRepo.Object, permService.Object);
+        var controller = new DocumentsController(docRepo.Object, permService.Object, tabRepo.Object);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.Create(new CreateDocumentRequest { Title = "New Doc" });
@@ -28,6 +29,23 @@ public class DocumentsControllerTests
         Assert.Equal("New Doc", doc.Title);
         Assert.Equal(callerId, doc.OwnerId);
         docRepo.Verify(r => r.CreateAsync(It.Is<Document>(d => d.OwnerId == callerId)), Times.Once);
+    }
+
+    [Fact]
+    public async Task Create_CreatesExactlyOneDefaultTab()
+    {
+        var docRepo = new Mock<IDocumentRepository>();
+        var permService = new Mock<IPermissionService>();
+        var tabRepo = new Mock<IDocumentTabRepository>();
+        var callerId = Guid.NewGuid();
+        var controller = new DocumentsController(docRepo.Object, permService.Object, tabRepo.Object);
+        controller.SetCallerIdForTesting(callerId);
+
+        var result = await controller.Create(new CreateDocumentRequest { Title = "New Doc" });
+
+        var created = Assert.IsType<CreatedResult>(result.Result);
+        var doc = Assert.IsType<Document>(created.Value);
+        tabRepo.Verify(r => r.CreateAsync(It.Is<DocumentTab>(t => t.DocumentId == doc.Id)), Times.Once);
     }
 
     [Fact]
@@ -41,7 +59,8 @@ public class DocumentsControllerTests
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.GetEffectiveRoleAsync(ownedDoc.Id, callerId)).ReturnsAsync(DocumentRole.Owner);
         permService.Setup(p => p.GetEffectiveRoleAsync(sharedDoc.Id, callerId)).ReturnsAsync(DocumentRole.Viewer);
-        var controller = new DocumentsController(docRepo.Object, permService.Object);
+        var tabRepo = new Mock<IDocumentTabRepository>();
+        var controller = new DocumentsController(docRepo.Object, permService.Object, tabRepo.Object);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.List();
@@ -62,7 +81,8 @@ public class DocumentsControllerTests
         docRepo.Setup(r => r.GetByIdAsync(document.Id)).ReturnsAsync(document);
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.GetEffectiveRoleAsync(document.Id, callerId)).ReturnsAsync((DocumentRole?)null);
-        var controller = new DocumentsController(docRepo.Object, permService.Object);
+        var tabRepo = new Mock<IDocumentTabRepository>();
+        var controller = new DocumentsController(docRepo.Object, permService.Object, tabRepo.Object);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.Get(document.Id);
@@ -79,7 +99,8 @@ public class DocumentsControllerTests
         docRepo.Setup(r => r.GetByIdAsync(document.Id)).ReturnsAsync(document);
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.GetEffectiveRoleAsync(document.Id, callerId)).ReturnsAsync(DocumentRole.Commenter);
-        var controller = new DocumentsController(docRepo.Object, permService.Object);
+        var tabRepo = new Mock<IDocumentTabRepository>();
+        var controller = new DocumentsController(docRepo.Object, permService.Object, tabRepo.Object);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.Get(document.Id);
@@ -100,7 +121,8 @@ public class DocumentsControllerTests
         docRepo.Setup(r => r.GetByIdAsync(document.Id)).ReturnsAsync(document);
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.AuthorizeAsync(document.Id, callerId, DocumentRole.Editor)).ReturnsAsync(true);
-        var controller = new DocumentsController(docRepo.Object, permService.Object);
+        var tabRepo = new Mock<IDocumentTabRepository>();
+        var controller = new DocumentsController(docRepo.Object, permService.Object, tabRepo.Object);
         controller.SetCallerIdForTesting(callerId);
 
         var result = await controller.Move(document.Id, new DocumentsController.MoveDocumentRequest { FolderId = folderId });
@@ -120,7 +142,8 @@ public class DocumentsControllerTests
         var permService = new Mock<IPermissionService>();
         permService.Setup(p => p.AuthorizeAsync(document.Id, It.IsAny<Guid>(), DocumentRole.Editor))
             .ReturnsAsync(false);
-        var controller = new DocumentsController(docRepo.Object, permService.Object);
+        var tabRepo = new Mock<IDocumentTabRepository>();
+        var controller = new DocumentsController(docRepo.Object, permService.Object, tabRepo.Object);
         controller.SetCallerIdForTesting(Guid.NewGuid());
 
         var result = await controller.Move(document.Id, new DocumentsController.MoveDocumentRequest());

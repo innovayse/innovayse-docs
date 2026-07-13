@@ -101,11 +101,10 @@ public class DocumentTabsController : ControllerBase
         var tab = await _tabRepository.GetByIdAsync(tabId);
         if (tab is null || tab.DocumentId != documentId) return NotFound();
 
-        var allTabs = await _tabRepository.ListForDocumentAsync(documentId);
-        if (allTabs.Count <= 1)
+        var deleted = await _tabRepository.DeleteIfNotLastAsync(tabId);
+        if (!deleted)
             return Conflict(new { message = "A document must have at least one tab." });
 
-        await _tabRepository.DeleteAsync(tabId);
         return NoContent();
     }
 }

@@ -118,15 +118,12 @@ public class DocumentTabsControllerTests
         permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Editor)).ReturnsAsync(true);
         tabRepo.Setup(r => r.GetByIdAsync(tabId)).ReturnsAsync(
             new DocumentTab { Id = tabId, DocumentId = documentId, Title = "Only tab", OrderIndex = 0 });
-        tabRepo.Setup(r => r.ListForDocumentAsync(documentId)).ReturnsAsync(
-        [
-            new DocumentTab { Id = tabId, DocumentId = documentId, Title = "Only tab", OrderIndex = 0 }
-        ]);
+        tabRepo.Setup(r => r.DeleteIfNotLastAsync(tabId)).ReturnsAsync(false);
 
         var result = await controller.Delete(documentId, tabId);
 
         var conflict = Assert.IsType<ConflictObjectResult>(result);
-        tabRepo.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
+        tabRepo.Verify(r => r.DeleteIfNotLastAsync(tabId), Times.Once);
     }
 
     [Fact]
@@ -139,15 +136,11 @@ public class DocumentTabsControllerTests
         permService.Setup(p => p.AuthorizeAsync(documentId, callerId, DocumentRole.Editor)).ReturnsAsync(true);
         tabRepo.Setup(r => r.GetByIdAsync(tabId)).ReturnsAsync(
             new DocumentTab { Id = tabId, DocumentId = documentId, Title = "Tab 1", OrderIndex = 0 });
-        tabRepo.Setup(r => r.ListForDocumentAsync(documentId)).ReturnsAsync(
-        [
-            new DocumentTab { Id = tabId, DocumentId = documentId, Title = "Tab 1", OrderIndex = 0 },
-            new DocumentTab { Id = Guid.NewGuid(), DocumentId = documentId, Title = "Tab 2", OrderIndex = 1 }
-        ]);
+        tabRepo.Setup(r => r.DeleteIfNotLastAsync(tabId)).ReturnsAsync(true);
 
         var result = await controller.Delete(documentId, tabId);
 
         Assert.IsType<NoContentResult>(result);
-        tabRepo.Verify(r => r.DeleteAsync(tabId), Times.Once);
+        tabRepo.Verify(r => r.DeleteIfNotLastAsync(tabId), Times.Once);
     }
 }

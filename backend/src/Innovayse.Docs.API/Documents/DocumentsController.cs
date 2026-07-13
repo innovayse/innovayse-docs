@@ -16,12 +16,17 @@ public class DocumentsController : ControllerBase
 {
     private readonly IDocumentRepository _documentRepository;
     private readonly IPermissionService _permissionService;
+    private readonly IDocumentTabRepository _documentTabRepository;
     private Guid? _callerIdOverride;
 
-    public DocumentsController(IDocumentRepository documentRepository, IPermissionService permissionService)
+    public DocumentsController(
+        IDocumentRepository documentRepository,
+        IPermissionService permissionService,
+        IDocumentTabRepository documentTabRepository)
     {
         _documentRepository = documentRepository;
         _permissionService = permissionService;
+        _documentTabRepository = documentTabRepository;
     }
 
     // Test seam: production code reads the caller from the JWT `sub` claim.
@@ -45,6 +50,20 @@ public class DocumentsController : ControllerBase
         };
 
         await _documentRepository.CreateAsync(document);
+
+        // Every document needs at least one tab so the frontend has something to load and
+        // render — see the Task 1 migration for the same "Id = document.Id" convention used
+        // when backfilling tabs for pre-existing documents.
+        await _documentTabRepository.CreateAsync(new DocumentTab
+        {
+            Id = document.Id,
+            DocumentId = document.Id,
+            Title = "Tab 1",
+            OrderIndex = 0,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
+
         return Created($"/documents/{document.Id}", document);
     }
 
