@@ -165,6 +165,45 @@ watch([zoom, pageMarginLeft, pageMarginRight], async () => {
   const view = editor.value?.view
   if (view) view.dispatch(view.state.tr)
 })
+
+// Auto-fit zoom to the available width so the fixed-width A4 page never forces a
+// horizontal scrollbar on a narrow viewport/panel — the same `zoom` ref the toolbar's
+// manual zoom dropdown drives, so pagination's existing zoom-aware measurement (above)
+// handles this for free. Stops adjusting the moment the user picks a zoom level
+// themselves, so a deliberate choice is never silently overridden by a later resize.
+const pageScrollRef = ref<HTMLElement | null>(null)
+const userSetZoom = ref(false)
+let resizeObserver: ResizeObserver | null = null
+
+function handleZoomChange(value: number) {
+  userSetZoom.value = true
+  zoom.value = value
+}
+
+// Snaps to the same preset steps the toolbar's zoom dropdown offers (see
+// EditorToolbar.vue) rather than an arbitrary continuous scale, so the dropdown always
+// shows a real, selectable value instead of going blank between presets.
+const ZOOM_PRESETS_DESCENDING = [1, 0.9, 0.75, 0.5]
+
+function fitZoomToContainer() {
+  if (userSetZoom.value) return
+  const el = pageScrollRef.value
+  if (!el) return
+  const available = el.clientWidth - 32 // matches the container's own px-4 (16px each side)
+  if (available <= 0) return
+  const fit = available / PAGE_WIDTH
+  zoom.value = ZOOM_PRESETS_DESCENDING.find((preset) => preset <= fit) ?? ZOOM_PRESETS_DESCENDING.at(-1)!
+}
+
+onMounted(() => {
+  if (pageScrollRef.value) {
+    resizeObserver = new ResizeObserver(fitZoomToContainer)
+    resizeObserver.observe(pageScrollRef.value)
+  }
+  fitZoomToContainer()
+})
+
+onBeforeUnmount(() => resizeObserver?.disconnect())
 </script>
 
 <template>
@@ -172,8 +211,9 @@ watch([zoom, pageMarginLeft, pageMarginRight], async () => {
     v-if="editor && canEdit"
     :editor="editor"
     :undo-manager="undoManager"
+    :zoom="zoom"
     @insert-comment="emit('insert-comment')"
-    @zoom="zoom = $event"
+    @zoom="handleZoomChange($event)"
   />
   <p v-if="editor && !canEdit" class="px-4 pt-3 text-xs text-[var(--text-muted)]">
     Viewing only — you don't have permission to edit this document.
@@ -186,7 +226,7 @@ watch([zoom, pageMarginLeft, pageMarginRight], async () => {
        edge first) instead of scrollLeft 0, which reads as "content cut off" the moment this
        page is narrower than PAGE_WIDTH. mx-auto on a block child has no such quirk — it always
        starts at the left edge, matching DocumentRuler's identical centering above. -->
-  <div class="print-chrome-reset overflow-x-auto px-4 pb-10 pt-6">
+  <div ref="pageScrollRef" class="print-chrome-reset overflow-x-auto px-4 pb-10 pt-6">
     <div
       class="page-surface mx-auto rounded-sm py-12 shadow-xl"
       :style="{

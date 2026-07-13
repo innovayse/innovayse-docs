@@ -3,7 +3,7 @@
 import type { Editor } from '@tiptap/vue-3'
 import * as Y from 'yjs'
 
-const props = defineProps<{ editor: Editor; undoManager: Y.UndoManager }>()
+const props = defineProps<{ editor: Editor; undoManager: Y.UndoManager; zoom: number }>()
 const emit = defineEmits<{ 'insert-comment': []; zoom: [level: number] }>()
 
 // Tiptap's `editor.isActive()`/`can()` calls aren't reactive on their own in
@@ -147,10 +147,12 @@ props.editor.on('selectionUpdate', () => {
   painting.value = false
 })
 
-const zoomLevel = ref(100)
+// Mirrors props.zoom rather than owning zoom state itself — the parent also auto-fits
+// zoom to the available width on narrow viewports (see CollaborativeEditor.vue), and this
+// dropdown needs to reflect that, not just the user's own manual selections.
+const zoomLevel = computed(() => Math.round(props.zoom * 100))
 function applyZoom(event: Event) {
-  zoomLevel.value = Number((event.target as HTMLSelectElement).value)
-  emit('zoom', zoomLevel.value / 100)
+  emit('zoom', Number((event.target as HTMLSelectElement).value) / 100)
 }
 </script>
 

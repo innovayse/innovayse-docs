@@ -138,7 +138,7 @@ async function handleRestoreVersion(versionId: string) {
       {{ shareLinkError }}
     </div>
 
-    <div class="print-chrome-reset mx-auto flex w-full max-w-6xl flex-1 flex-col items-stretch gap-4 px-4 py-4 sm:px-6 sm:py-8 lg:flex-row lg:gap-6">
+    <div class="print-chrome-reset mx-auto flex w-full max-w-6xl flex-1 flex-col items-stretch gap-4 px-4 py-4 sm:px-6 sm:py-8 lg:flex-row lg:gap-6 xl:max-w-7xl 2xl:max-w-[100rem]">
       <DocumentTabsSidebar
         v-if="documentReady"
         :document-id="route.params.id as string"
@@ -146,7 +146,7 @@ async function handleRestoreVersion(versionId: string) {
         @update:active-tab-id="activeTabId = $event"
       />
 
-      <section v-if="documentReady && activeTabId" class="print-chrome-reset glass-panel min-w-0 flex-1 overflow-x-auto rounded-[var(--radius-card)] py-4 sm:py-8">
+      <section v-if="documentReady && activeTabId" class="print-chrome-reset glass-panel min-w-0 flex-1 rounded-[var(--radius-card)] py-4 sm:py-8">
         <ClientOnly>
           <CollaborativeEditor
             v-if="accessToken"

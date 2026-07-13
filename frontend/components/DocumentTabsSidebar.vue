@@ -121,7 +121,7 @@ async function onDrop(targetTabId: string) {
 </script>
 
 <template>
-  <div class="w-full shrink-0 lg:w-56">
+  <div class="w-full shrink-0 lg:w-48">
     <div class="mb-2 flex items-center justify-between px-2 lg:px-2">
       <span class="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Tabs</span>
       <button
