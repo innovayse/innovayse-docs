@@ -149,8 +149,16 @@ props.editor.on('selectionUpdate', () => {
 
 // Mirrors props.zoom rather than owning zoom state itself — the parent also auto-fits
 // zoom to the available width on narrow viewports (see CollaborativeEditor.vue), and this
-// dropdown needs to reflect that, not just the user's own manual selections.
-const zoomLevel = computed(() => Math.round(props.zoom * 100))
+// dropdown needs to reflect that, not just the user's own manual selections. Auto-fit
+// lands on an exact continuous ratio (not one of the preset steps below) so the page
+// never leaves a scrollbar-triggering gap — display the closest preset here rather than
+// the raw percentage, which usually wouldn't match any <option> and render blank.
+const ZOOM_PRESETS = [50, 75, 90, 100, 125, 150, 200]
+const zoomLevel = computed(() => {
+  const exact = props.zoom * 100
+  return ZOOM_PRESETS.reduce((closest, preset) =>
+    Math.abs(preset - exact) < Math.abs(closest - exact) ? preset : closest)
+})
 function applyZoom(event: Event) {
   emit('zoom', Number((event.target as HTMLSelectElement).value) / 100)
 }

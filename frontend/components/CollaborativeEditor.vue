@@ -180,19 +180,20 @@ function handleZoomChange(value: number) {
   zoom.value = value
 }
 
-// Snaps to the same preset steps the toolbar's zoom dropdown offers (see
-// EditorToolbar.vue) rather than an arbitrary continuous scale, so the dropdown always
-// shows a real, selectable value instead of going blank between presets.
-const ZOOM_PRESETS_DESCENDING = [1, 0.9, 0.75, 0.5]
-
+// A continuous fit, not snapped to the toolbar's preset steps: snapping to the nearest
+// preset *below* the true fit ratio (e.g. rounding 68% down to the 50% preset) leaves a
+// real, visible gap between the page and the container, which still forces a horizontal
+// scrollbar — the exact thing this is meant to eliminate. EditorToolbar's dropdown shows
+// the closest preset purely for display; the real zoom stays exact. A 1% safety margin
+// absorbs sub-pixel rounding so the page never re-triggers its own scrollbar by half a
+// pixel.
 function fitZoomToContainer() {
   if (userSetZoom.value) return
   const el = pageScrollRef.value
   if (!el) return
   const available = el.clientWidth - 32 // matches the container's own px-4 (16px each side)
   if (available <= 0) return
-  const fit = available / PAGE_WIDTH
-  zoom.value = ZOOM_PRESETS_DESCENDING.find((preset) => preset <= fit) ?? ZOOM_PRESETS_DESCENDING.at(-1)!
+  zoom.value = Math.min(1, (available / PAGE_WIDTH) * 0.99)
 }
 
 onMounted(() => {
