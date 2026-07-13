@@ -12,6 +12,7 @@ const versionHistoryOpen = ref(false)
 const title = ref('')
 const savingTitle = ref(false)
 const documentReady = ref(false)
+const activeTabId = ref('')
 const shareLinkError = ref('')
 const role = ref<string | null>(null)
 const canEdit = computed(() => role.value === 'Editor' || role.value === 'Owner')
@@ -138,12 +139,21 @@ async function handleRestoreVersion(versionId: string) {
     </div>
 
     <div class="print-chrome-reset mx-auto flex w-full max-w-6xl flex-1 items-stretch gap-6 px-6 py-8">
-      <section v-if="documentReady" class="print-chrome-reset glass-panel min-w-0 flex-1 rounded-[var(--radius-card)] py-8">
+      <DocumentTabsSidebar
+        v-if="documentReady"
+        :document-id="route.params.id as string"
+        :can-edit="canEdit"
+        @update:active-tab-id="activeTabId = $event"
+      />
+
+      <section v-if="documentReady && activeTabId" class="print-chrome-reset glass-panel min-w-0 flex-1 rounded-[var(--radius-card)] py-8">
         <ClientOnly>
           <CollaborativeEditor
             v-if="accessToken"
+            :key="activeTabId"
             ref="editorRef"
             :document-id="route.params.id as string"
+            :tab-id="activeTabId"
             :access-token="accessToken"
             :user-name="user?.profile.name ?? 'Anonymous'"
             :can-edit="canEdit"
