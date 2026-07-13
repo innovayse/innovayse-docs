@@ -20,6 +20,7 @@ public class DocsDbContext : DbContext
     public DbSet<DocumentUpdate> DocumentUpdates => Set<DocumentUpdate>();
     public DbSet<DocumentVersion> DocumentVersions => Set<DocumentVersion>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<DocumentTab> DocumentTabs => Set<DocumentTab>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,5 +34,6 @@ public class DocsDbContext : DbContext
         modelBuilder.Entity<DocumentUpdate>().HasKey(u => u.Id);
         modelBuilder.Entity<DocumentVersion>().HasKey(v => v.Id);
         modelBuilder.Entity<Notification>().HasKey(n => n.Id);
+        modelBuilder.Entity<DocumentTab>().HasKey(t => t.Id);
     }
 }
