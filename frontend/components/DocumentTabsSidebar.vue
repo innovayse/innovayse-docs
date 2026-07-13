@@ -20,6 +20,7 @@ const renamingTabId = ref<string | null>(null)
 const renameDraft = ref('')
 const draggingTabId = ref<string | null>(null)
 const deleteCandidateId = ref<string | null>(null)
+const deleting = ref(false)
 
 async function loadTabs() {
   const result = (await listTabs(props.documentId)) as Tab[]
@@ -40,10 +41,14 @@ function selectTab(tabId: string) {
 
 async function addTab() {
   const nextNumber = tabs.value.length + 1
-  await createTab(props.documentId, `Tab ${nextNumber}`)
-  await loadTabs()
-  const lastTab = tabs.value[tabs.value.length - 1]
-  if (lastTab) selectTab(lastTab.id)
+  try {
+    await createTab(props.documentId, `Tab ${nextNumber}`)
+    await loadTabs()
+    const lastTab = tabs.value[tabs.value.length - 1]
+    if (lastTab) selectTab(lastTab.id)
+  } catch (error) {
+    console.error('Failed to add tab', error)
+  }
 }
 
 function startRename(tab: Tab) {
@@ -55,8 +60,12 @@ async function commitRename() {
   if (!renamingTabId.value) return
   const trimmed = renameDraft.value.trim()
   if (trimmed) {
-    await renameTab(props.documentId, renamingTabId.value, trimmed)
-    await loadTabs()
+    try {
+      await renameTab(props.documentId, renamingTabId.value, trimmed)
+      await loadTabs()
+    } catch (error) {
+      console.error('Failed to rename tab', error)
+    }
   }
   renamingTabId.value = null
 }
@@ -67,9 +76,16 @@ function confirmDelete(tabId: string) {
 
 async function performDelete() {
   if (!deleteCandidateId.value) return
-  await deleteTab(props.documentId, deleteCandidateId.value)
-  deleteCandidateId.value = null
-  await loadTabs()
+  deleting.value = true
+  try {
+    await deleteTab(props.documentId, deleteCandidateId.value)
+    deleteCandidateId.value = null
+    await loadTabs()
+  } catch (error) {
+    console.error('Failed to delete tab', error)
+  } finally {
+    deleting.value = false
+  }
 }
 
 function onDragStart(tabId: string) {
@@ -94,8 +110,13 @@ async function onDrop(targetTabId: string) {
   tabs.value = reordered
   draggingTabId.value = null
 
-  await Promise.all(reordered.map((tab, index) => reorderTab(props.documentId, tab.id, index)))
-  await loadTabs()
+  try {
+    await Promise.all(reordered.map((tab, index) => reorderTab(props.documentId, tab.id, index)))
+    await loadTabs()
+  } catch (error) {
+    console.error('Failed to reorder tabs', error)
+    await loadTabs()
+  }
 }
 </script>
 
@@ -155,8 +176,8 @@ async function onDrop(targetTabId: string) {
       <div class="glass-panel w-80 rounded-[var(--radius-card)] p-4">
         <p class="mb-4 text-sm text-[var(--text-subtitle)]">Delete this tab? This can't be undone.</p>
         <div class="flex justify-end gap-2">
-          <button class="rounded-[var(--radius-input)] px-3 py-1.5 text-xs" @click="deleteCandidateId = null">Cancel</button>
-          <button class="rounded-[var(--radius-input)] bg-red-500/80 px-3 py-1.5 text-xs text-white" @click="performDelete">Delete</button>
+          <button class="rounded-[var(--radius-input)] px-3 py-1.5 text-xs" :disabled="deleting" @click="deleteCandidateId = null">Cancel</button>
+          <button class="rounded-[var(--radius-input)] bg-red-500/80 px-3 py-1.5 text-xs text-white disabled:opacity-50" :disabled="deleting" @click="performDelete">Delete</button>
         </div>
       </div>
     </div>
