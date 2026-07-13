@@ -8,6 +8,8 @@ builder.Services.AddDbContext<Innovayse.Docs.Infrastructure.Persistence.DocsDbCo
     options.UseNpgsql(builder.Configuration.GetConnectionString("DocsDb")));
 builder.Services.AddScoped<Innovayse.Docs.Application.Documents.IDocumentRepository,
     Innovayse.Docs.Infrastructure.Repositories.DocumentRepository>();
+builder.Services.AddScoped<Innovayse.Docs.Application.Documents.IDocumentTabRepository,
+    Innovayse.Docs.Infrastructure.Repositories.DocumentTabRepository>();
 builder.Services.AddScoped<Innovayse.Docs.Application.Folders.IFolderRepository,
     Innovayse.Docs.Infrastructure.Repositories.FolderRepository>();
 builder.Services.AddScoped<Innovayse.Docs.Application.Sharing.IPermissionRepository,
