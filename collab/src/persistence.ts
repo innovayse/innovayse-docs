@@ -1,10 +1,12 @@
 export async function persistUpdate(
-  documentId: string,
+  roomName: string,
   update: Uint8Array,
   token: string,
   apiBaseUrl: string,
 ): Promise<void> {
-  await fetch(`${apiBaseUrl}/documents/${documentId}/updates`, {
+  const [documentId, tabId] = roomName.split(':')
+
+  await fetch(`${apiBaseUrl}/documents/${documentId}/tabs/${tabId}/updates`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -15,11 +17,13 @@ export async function persistUpdate(
 }
 
 export async function loadUpdates(
-  documentId: string,
+  roomName: string,
   token: string,
   apiBaseUrl: string,
 ): Promise<Uint8Array[]> {
-  const response = await fetch(`${apiBaseUrl}/documents/${documentId}/updates`, {
+  const [documentId, tabId] = roomName.split(':')
+
+  const response = await fetch(`${apiBaseUrl}/documents/${documentId}/tabs/${tabId}/updates`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) return []

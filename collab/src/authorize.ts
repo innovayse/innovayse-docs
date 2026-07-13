@@ -4,9 +4,11 @@ export interface AuthorizeResult {
 
 export async function authorize(
   token: string,
-  documentId: string,
+  roomName: string,
   apiBaseUrl: string,
 ): Promise<AuthorizeResult | null> {
+  const [documentId] = roomName.split(':')
+
   const response = await fetch(
     `${apiBaseUrl}/internal/collab/authorize?documentId=${documentId}`,
     { headers: { Authorization: `Bearer ${token}` } },
