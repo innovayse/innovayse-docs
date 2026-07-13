@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Innovayse.Docs.API.Versions;
 
 [ApiController]
-[Route("documents/{documentId}/updates")]
+[Route("documents/{documentId}/tabs/{tabId}/updates")]
 [Authorize]
 public class UpdatesController : ControllerBase
 {
@@ -36,7 +36,7 @@ public class UpdatesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Append(Guid documentId, AppendUpdateRequest request)
+    public async Task<IActionResult> Append(Guid documentId, Guid tabId, AppendUpdateRequest request)
     {
         if (!await _permissionService.AuthorizeAsync(documentId, CallerId, DocumentRole.Editor))
             return Forbid();
@@ -45,6 +45,7 @@ public class UpdatesController : ControllerBase
         {
             Id = Guid.NewGuid(),
             DocumentId = documentId,
+            TabId = tabId,
             UpdateBinary = Convert.FromBase64String(request.UpdateBase64),
             AuthorId = CallerId,
             CreatedAt = DateTimeOffset.UtcNow
@@ -56,12 +57,12 @@ public class UpdatesController : ControllerBase
     public record UpdateResponse(string UpdateBase64);
 
     [HttpGet]
-    public async Task<ActionResult<List<UpdateResponse>>> List(Guid documentId)
+    public async Task<ActionResult<List<UpdateResponse>>> List(Guid documentId, Guid tabId)
     {
         if (!await _permissionService.AuthorizeAsync(documentId, CallerId, DocumentRole.Viewer))
             return Forbid();
 
-        var updates = await _versionRepository.ListUpdatesAsync(documentId);
-        return Ok(updates.Select(u => new UpdateResponse(Convert.ToBase64String(u.UpdateBinary))));
+        var updates = await _versionRepository.ListUpdatesAsync(tabId);
+        return Ok(updates.Select(u => new UpdateResponse(Convert.ToBase64String(u.UpdateBinary))).ToList());
     }
 }
