@@ -181,9 +181,14 @@ watch([zoom, pageMarginLeft, pageMarginRight], async () => {
   <div class="mx-auto" :style="{ width: `${PAGE_WIDTH}px`, maxWidth: '100%' }">
     <DocumentRuler v-model:margin-left="pageMarginLeft" v-model:margin-right="pageMarginRight" />
   </div>
-  <div class="print-chrome-reset flex justify-center overflow-x-auto px-4 pb-10 pt-6">
+  <!-- Plain block-level overflow + child mx-auto, not flex+justify-center: Chromium starts
+       a flex-centered overflow-x-auto container scrolled to the midpoint (clipping the left
+       edge first) instead of scrollLeft 0, which reads as "content cut off" the moment this
+       page is narrower than PAGE_WIDTH. mx-auto on a block child has no such quirk — it always
+       starts at the left edge, matching DocumentRuler's identical centering above. -->
+  <div class="print-chrome-reset overflow-x-auto px-4 pb-10 pt-6">
     <div
-      class="page-surface shrink-0 rounded-sm py-12 shadow-xl"
+      class="page-surface mx-auto rounded-sm py-12 shadow-xl"
       :style="{
         zoom,
         width: `${PAGE_WIDTH}px`,
