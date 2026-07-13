@@ -121,8 +121,8 @@ async function onDrop(targetTabId: string) {
 </script>
 
 <template>
-  <div class="w-56 shrink-0">
-    <div class="mb-2 flex items-center justify-between px-2">
+  <div class="w-full shrink-0 lg:w-56">
+    <div class="mb-2 flex items-center justify-between px-2 lg:px-2">
       <span class="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Tabs</span>
       <button
         v-if="canEdit"
@@ -134,12 +134,15 @@ async function onDrop(targetTabId: string) {
       </button>
     </div>
 
-    <ul class="flex flex-col gap-1">
+    <!-- Below lg: a horizontally scrollable pill strip above the editor — a fixed-width
+         vertical column has no room on a phone. At lg+ it becomes the familiar left-hand
+         vertical tab list (matches CommentsSidebar's own lg: breakpoint on the right). -->
+    <ul class="flex snap-x snap-mandatory gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
       <li
         v-for="tab in tabs"
         :key="tab.id"
         :draggable="canEdit"
-        class="group flex items-center gap-2 rounded-[var(--radius-input)] px-2 py-1.5 text-sm"
+        class="group flex shrink-0 snap-start items-center gap-2 rounded-[var(--radius-input)] px-3 py-1.5 text-sm lg:w-full lg:shrink lg:px-2"
         :class="tab.id === activeTabId ? 'bg-white/10 text-[var(--text-heading)]' : 'text-[var(--text-subtitle)] hover:bg-white/5'"
         @dragstart="onDragStart(tab.id)"
         @dragover.prevent
@@ -150,16 +153,16 @@ async function onDrop(targetTabId: string) {
           v-if="renamingTabId === tab.id"
           v-model="renameDraft"
           autofocus
-          class="min-w-0 flex-1 rounded bg-transparent px-1 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent-start)]"
+          class="w-28 min-w-0 rounded bg-transparent px-1 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent-start)] lg:w-auto lg:flex-1"
           @keyup.enter="commitRename"
           @blur="commitRename"
           @click.stop
         />
-        <span v-else class="min-w-0 flex-1 truncate" @dblclick="canEdit && startRename(tab)">{{ tab.title }}</span>
+        <span v-else class="min-w-0 max-w-[10rem] truncate lg:max-w-none lg:flex-1" @dblclick="canEdit && startRename(tab)">{{ tab.title }}</span>
 
         <button
           v-if="canEdit"
-          class="hidden shrink-0 text-xs text-[var(--text-muted)] hover:text-red-400 group-hover:inline"
+          class="shrink-0 text-xs text-[var(--text-muted)] hover:text-red-400 lg:hidden lg:group-hover:inline"
           aria-label="Delete tab"
           @click.stop="confirmDelete(tab.id)"
         >

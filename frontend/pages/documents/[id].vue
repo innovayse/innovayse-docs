@@ -93,8 +93,8 @@ async function handleRestoreVersion(versionId: string) {
 
 <template>
   <div class="flex min-h-screen flex-col">
-    <header class="no-print glass-panel sticky top-0 z-10 flex items-center justify-between gap-4 border-x-0 border-t-0 px-6 py-3">
-      <div class="flex min-w-0 items-center gap-3">
+    <header class="no-print glass-panel sticky top-0 z-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-x-0 border-t-0 px-3 py-3 sm:px-6">
+      <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <NuxtLink to="/" class="shrink-0">
           <img src="/logo.png" alt="Innovayse" class="h-7 w-7 rounded-lg" />
         </NuxtLink>
@@ -102,28 +102,28 @@ async function handleRestoreVersion(versionId: string) {
           v-model="title"
           placeholder="Untitled document"
           :readonly="!canEdit"
-          class="min-w-0 max-w-xs rounded-[var(--radius-input)] border-0 bg-transparent px-2 py-1 text-sm font-semibold text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:bg-[var(--input-bg)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-start)] read-only:cursor-default"
+          class="min-w-0 max-w-[9rem] flex-1 rounded-[var(--radius-input)] border-0 bg-transparent px-2 py-1 text-sm font-semibold text-[var(--text-heading)] placeholder:text-[var(--text-muted)] focus:bg-[var(--input-bg)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-start)] read-only:cursor-default sm:max-w-xs"
           @keyup.enter="($event.target as HTMLInputElement).blur()"
           @blur="saveTitle"
         />
-        <span v-if="savingTitle" class="text-xs text-[var(--text-muted)]">Saving…</span>
+        <span v-if="savingTitle" class="hidden shrink-0 text-xs text-[var(--text-muted)] sm:inline">Saving…</span>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex shrink-0 items-center gap-2 sm:gap-3">
         <ClientOnly>
-          <span v-if="user" class="hidden text-xs text-[var(--text-subtitle)] sm:inline">
+          <span v-if="user" class="hidden text-xs text-[var(--text-subtitle)] md:inline">
             {{ user.profile.email }}
           </span>
         </ClientOnly>
         <NotificationBell />
         <button
-          class="rounded-[var(--radius-input)] border border-white/10 px-3 py-2 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 hover:text-[var(--text-heading)]"
+          class="rounded-[var(--radius-input)] border border-white/10 px-2.5 py-2 text-xs font-medium text-[var(--text-subtitle)] transition hover:bg-white/5 hover:text-[var(--text-heading)] sm:px-3"
           @click="versionHistoryOpen = true"
         >
           History
         </button>
         <button
           v-if="role === 'Owner'"
-          class="accent-gradient rounded-[var(--radius-input)] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-sky-500/20 transition hover:brightness-110"
+          class="accent-gradient rounded-[var(--radius-input)] px-3 py-2 text-xs font-semibold text-white shadow-md shadow-sky-500/20 transition hover:brightness-110 sm:px-4"
           @click="shareOpen = true"
         >
           Share
@@ -138,7 +138,7 @@ async function handleRestoreVersion(versionId: string) {
       {{ shareLinkError }}
     </div>
 
-    <div class="print-chrome-reset mx-auto flex w-full max-w-6xl flex-1 items-stretch gap-6 px-6 py-8">
+    <div class="print-chrome-reset mx-auto flex w-full max-w-6xl flex-1 flex-col items-stretch gap-4 px-4 py-4 sm:px-6 sm:py-8 lg:flex-row lg:gap-6">
       <DocumentTabsSidebar
         v-if="documentReady"
         :document-id="route.params.id as string"
@@ -146,7 +146,7 @@ async function handleRestoreVersion(versionId: string) {
         @update:active-tab-id="activeTabId = $event"
       />
 
-      <section v-if="documentReady && activeTabId" class="print-chrome-reset glass-panel min-w-0 flex-1 rounded-[var(--radius-card)] py-8">
+      <section v-if="documentReady && activeTabId" class="print-chrome-reset glass-panel min-w-0 flex-1 overflow-x-auto rounded-[var(--radius-card)] py-4 sm:py-8">
         <ClientOnly>
           <CollaborativeEditor
             v-if="accessToken"
