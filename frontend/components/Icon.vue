@@ -31,7 +31,7 @@ type IconName =
   | 'table'
   | 'bell'
 
-defineProps<{ name: IconName; class?: string }>()
+defineProps<{ name: IconName }>()
 
 const strokePaths: Partial<Record<IconName, string>> = {
   document:
@@ -85,7 +85,6 @@ const fillPaths: Partial<Record<IconName, string>> = {
 
 <template>
   <svg
-    :class="class"
     viewBox="0 0 24 24"
     :fill="fillPaths[name] ? 'currentColor' : 'none'"
     stroke="currentColor"
