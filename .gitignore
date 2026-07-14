@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Frontend (Nuxt)
+frontend/.nuxt/
+frontend/.output/
+frontend/dist/
+
+# Backend (.NET)
+backend/**/bin/
+backend/**/obj/
+*.user
+
+# Collab (Node/TS)
+collab/dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
