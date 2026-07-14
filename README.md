@@ -1,5 +1,8 @@
 # Innovayse Docs
 
+[![CI](https://github.com/innovayse/innovayse-docs/actions/workflows/ci.yml/badge.svg)](https://github.com/innovayse/innovayse-docs/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A real-time collaborative document editor — Google-Docs-style rich text editing with
 multi-user presence, comments, folder sharing, PDF export, and document tabs.
 
