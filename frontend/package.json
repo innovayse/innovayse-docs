@@ -32,7 +32,7 @@
     "nuxt": "^4.4.8",
     "oidc-client-ts": "^3.5.0",
     "vue": "^3.5.39",
-    "vue-router": "^5.1.0",
+    "vue-router": "^5.2.0",
     "y-prosemirror": "^1.3.7",
     "yjs": "^13.6.31"
   },
